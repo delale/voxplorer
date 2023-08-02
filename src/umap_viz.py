@@ -29,9 +29,9 @@ def main(data_path:str, target_var, n_dim=2, target_weight=0.6):
     if type(target_var) is int:
         target_var = df.columns[target_var]
     if type(target_var) is str:
-        df.loc[target_var] = df.loc[target_var].astype('category')
-        y = df.loc[target_var].cat.codes.values
-        labels = df.loc[target_var].to_numpy()
+        df[target_var] = df[target_var].astype('category')
+        y = df[target_var].cat.codes.values
+        labels = df[target_var].to_numpy()
         X = df.drop(target_var, axis=1).to_numpy()
     else:
         raise ValueError(f"target_var has to be of either type int or str.")
