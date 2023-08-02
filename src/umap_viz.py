@@ -47,7 +47,7 @@ def main(data_path:str, target_var, n_dim=2, target_weight=0.6):
     redX = reducer.fit_transform(X, y)
 
     # prepare for plot
-    reduced_df = {f'dim{i}': redX[:, i] for i in range(n_plot_dim)}
+    reduced_df = {f'dim{i+1}': redX[:, i] for i in range(n_plot_dim)}
     reduced_df[target_var] = labels
     reduced_df = pd.DataFrame(reduced_df)
 
