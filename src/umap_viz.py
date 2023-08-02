@@ -1,8 +1,10 @@
 """UMAP visualisation of MFCCs data.
 """
 
+import argparse
 import os
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import umap
@@ -12,6 +14,14 @@ def main(data_path:str, target_var, n_dim=2, target_weight=0.6):
     if not os.path.isfile(data_path):
         raise FileNotFoundError(f"{data_path} does not exist.")
     
+    n_plot_dim=n_dim
+    if n_dim == 3:
+        raise Warning("3D plotting not coming soon. Defaulting to 2D.")
+        n_plot_dim = 2
+    elif n_dim > 3:
+        raise Warning(f"Cannot plot in more than 2D. UMAP embedding will be created using {n_dim} dimensions, but only the first 2 dimensions will be plotted.")
+        n_plot_dim = 2
+
     # load data
     df = pd.read_csv(data_path)
 
@@ -37,8 +47,36 @@ def main(data_path:str, target_var, n_dim=2, target_weight=0.6):
     redX = reducer.fit_transform(X, y)
 
     # prepare for plot
-    reduced_df = {f'dim{i}': redX[:, i] for i in range(redX.shape[1])}
+    reduced_df = {f'dim{i}': redX[:, i] for i in range(n_plot_dim)}
     reduced_df[target_var] = labels
     reduced_df = pd.DataFrame(reduced_df)
 
     # PLOTTING
+    ## pairs plot for dimensions could be interenting with more than 3D.
+    if n_plot_dim == 2:
+        fig, ax = plt.subplots(1,1, figsize=(15,15))
+        sns.scatterplot(
+            data=reduced_df, x='dim1', y='dim2', hue=target_var, ax=ax
+        )
+        fig.show()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'data', type=str, help='Path to the data table (.csv containing 1 target variable and features.)'
+    )
+    parser.add_argument(
+        'target_var', help='Name or index of target variable column (index starst from 0).'
+    )
+    parser.add_argument(
+        'dim', type=int, help='Number of dimensions to reduce using UMAP (default=2).', default=2
+    )
+    args = parser.parse_args()
+
+    try:
+        args.target_var = int(args.target_var)
+    except ValueError:
+        pass
+    
+    main(data_path=args.data, target_var=args.target_var, n_dim=args.dim)
