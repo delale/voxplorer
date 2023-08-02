@@ -58,7 +58,7 @@ def main(data_path:str, target_var, n_dim=2, target_weight=0.6):
         sns.scatterplot(
             data=reduced_df, x='dim1', y='dim2', hue=target_var, ax=ax
         )
-        fig.show()
+        plt.show()
 
 
 if __name__ == '__main__':
@@ -72,6 +72,9 @@ if __name__ == '__main__':
     parser.add_argument(
         'dim', type=int, help='Number of dimensions to reduce using UMAP (default=2).', default=2
     )
+    parser.add_argument(
+        'target_weight', type=float, help='Target weight for UMAP (default=0.6).', default=0.6
+    )
     args = parser.parse_args()
 
     try:
@@ -79,4 +82,4 @@ if __name__ == '__main__':
     except ValueError:
         pass
     
-    main(data_path=args.data, target_var=args.target_var, n_dim=args.dim)
+    main(data_path=args.data, target_var=args.target_var, n_dim=args.dim, target_weight=args.target_weight)
