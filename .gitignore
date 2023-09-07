@@ -1,3 +1,9 @@
-.vscode
+# Testing data
 testing/
+
+# Tensorboard specific files
+for_tensorboard/
+
+# Misc.
+.vscode
 .DS_Store
