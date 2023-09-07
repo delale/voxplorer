@@ -1,0 +1,17 @@
+name: spemviz
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.11.*
+  - numpy
+  - pandas
+  - umap-learn
+  - pytorch::pytorch
+  - torchaudio
+  - pip
+  - pip:
+    - speechbrain
+    - tensorflow
+    - tensorflow-metal
