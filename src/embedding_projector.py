@@ -78,8 +78,14 @@ class TensorBoardTool:
     def run(self):
         self._projector_setup()
         tb = program.TensorBoard()
-        tb.configure(argv=[None, '--logdir', self.log_dir])
+        tb.configure(argv=[
+            None, '--logdir', self.log_dir,
+            '--reuse_port', 'True'
+        ])
+        url = tb.launch()
+
         tb.main()
+        print(f"TensorBoard Embedding Projector at: {url}/#projector")
 
 
 def test():
