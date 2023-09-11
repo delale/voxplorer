@@ -46,6 +46,10 @@ class TensorBoardTool:
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
 
+        # Normalize the embeddings
+        # self._norm1U() # Did not seem to work all that well; distances between points don't make all that much sense anymore
+        # => better to just tick spherize data (this seems to be the case also on the online projector)
+
         # Create embedding tsv file
         pd.DataFrame(
             data=self.embedding_vecs
@@ -61,6 +65,16 @@ class TensorBoardTool:
             # Write metadata labels
             for labels in self.metadata:
                 f.write('\t'.join(labels)+"\n")
+
+    def _norm1U(self):
+        """Normalize the vectors to 1-unit vectors in the Euclidean space.
+        This is half of what 'Spherize data' in the embedding projector does
+        (it also centers the data), and is done only to fix the bug where UMAP
+        remains stuck unless 'Spherize data' is checked.
+        The issue arises from kNN needing normalized data as an input.
+        """
+        self.embedding_vecs = np.array(
+            [v / np.linalg.norm(v) for v in self.embedding_vecs])
 
     def _projector_setup(self) -> None:
         """Sets up embedding projector and projects the embeddings.
@@ -83,9 +97,8 @@ class TensorBoardTool:
             '--reuse_port', 'True'
         ])
         url = tb.launch()
-
-        tb.main()
         print(f"TensorBoard Embedding Projector at: {url}/#projector")
+        tb.main()
 
 
 def test():
