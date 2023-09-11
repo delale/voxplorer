@@ -46,14 +46,6 @@ class TensorBoardTool:
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
 
-        # # Embedding variable initialized with embeddings
-        # self.embedding_var = tf.Variable(self.embedding_vecs, name='embedding')
-
-        # # Create a checkpoint from embedding, the filename and key are the
-        # # name of the tensor.
-        # self.checkpoint = tf.train.Checkpoint(embedding=self.embedding_var)
-        # self.checkpoint.save(os.path.join(self.log_dir, "embedding.ckpt"))
-
         # Create embedding tsv file
         pd.DataFrame(
             data=self.embedding_vecs
