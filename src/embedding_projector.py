@@ -7,6 +7,7 @@ import os
 import subprocess
 import logging
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from tensorboard import program
 from tensorboard.plugins import projector
@@ -45,13 +46,19 @@ class TensorBoardTool:
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
 
-        # Embedding variable initialized with embeddings
-        self.embedding_var = tf.Variable(self.embedding_vecs, name='embedding')
+        # # Embedding variable initialized with embeddings
+        # self.embedding_var = tf.Variable(self.embedding_vecs, name='embedding')
 
-        # Create a checkpoint from embedding, the filename and key are the
-        # name of the tensor.
-        self.checkpoint = tf.train.Checkpoint(embedding=self.embedding_var)
-        self.checkpoint.save(os.path.join(self.log_dir, "embedding.ckpt"))
+        # # Create a checkpoint from embedding, the filename and key are the
+        # # name of the tensor.
+        # self.checkpoint = tf.train.Checkpoint(embedding=self.embedding_var)
+        # self.checkpoint.save(os.path.join(self.log_dir, "embedding.ckpt"))
+
+        # Create embedding tsv file
+        pd.DataFrame(
+            data=self.embedding_vecs
+        ).to_csv(os.path.join(self.log_dir, 'embeddings.tsv'),
+                 sep='\t', header=False, index=False)
 
         # Metadata file
         with open(os.path.join(self.log_dir, 'metadata.tsv'), 'w') as f:
@@ -72,7 +79,7 @@ class TensorBoardTool:
         # Configure embedding projector
         self.config = projector.ProjectorConfig()
         self.embedding = self.config.embeddings.add()
-        self.embedding.tensor_name = 'embedding/.ATTRIBUTES/VARIABLE_VALUE'
+        self.embedding.tensor_path = 'embeddings.tsv'
         self.embedding.metadata_path = 'metadata.tsv'
         projector.visualize_embeddings(self.log_dir, self.config)
 
