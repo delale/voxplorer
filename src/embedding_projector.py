@@ -15,29 +15,33 @@ from tensorboard.plugins import projector
 
 class TensorBoardTool:
 
-    def __init__(self, log_dir, embedding_vecs, metadata, metadata_var):
+    def __init__(self, log_dir: str, embedding_vecs: np.ndarray, metadata: np.ndarray, metadata_var: list):
         """Initialize TensorBoardTool class.
 
         Args:
             log_dir: Path to log directory for TensorBoard.
             embedding_vecs: Array of embedding vectors.
-            metadata: Array of metadata variables.
-            metadata_vars: Array of metadata variable names.
+            metadata: Array of metadata variables. If None, no metadata.
+            metadata_vars: Array of metadata variable names. If None, no metadata.
         """
         self.log_dir = log_dir
         self.embedding_vecs = embedding_vecs
 
         # Make metadata variable name a list if not already
-        if type(metadata_var) is not list:
-            self.metadata_var = [metadata_var]
-        else:
-            self.metadata_var = metadata_var
+        if metadata is not None and metadata_var is not None:
+            if type(metadata_var) is not list:
+                self.metadata_var = [metadata_var]
+            else:
+                self.metadata_var = metadata_var
 
-        # Reshape metadata if 1D
-        if len(self.metadata_var) == 1 and len(metadata.shape) == 1:
-            self.metadata = metadata.reshape((metadata.shape[0], 1))
+            # Reshape metadata if 1D
+            if len(self.metadata_var) == 1 and len(metadata.shape) == 1:
+                self.metadata = metadata.reshape((metadata.shape[0], 1))
+            else:
+                self.metadata = metadata
         else:
-            self.metadata = metadata
+            self.metadata = None
+            self.metadata_var = None
 
     def _data_setup(self) -> None:
         """Prepares data for embedding projector.
@@ -57,14 +61,18 @@ class TensorBoardTool:
                  sep='\t', header=False, index=False)
 
         # Metadata file
-        with open(os.path.join(self.log_dir, 'metadata.tsv'), 'w') as f:
-            if len(self.metadata_var) > 1:
-                # Write labels for metadata if there are more than 1 vars
-                f.write('\t'.join(self.metadata_var)+"\n")
+        if self.metadata is not None:
+            with open(os.path.join(self.log_dir, 'metadata.tsv'), 'w') as f:
+                if len(self.metadata_var) > 1:
+                    # Write labels for metadata if there are more than 1 vars
+                    f.write('\t'.join(self.metadata_var)+"\n")
 
-            # Write metadata labels
-            for labels in self.metadata:
-                f.write('\t'.join(labels)+"\n")
+                # Write metadata labels
+                for labels in self.metadata:
+                    f.write('\t'.join(labels)+"\n")
+        else:
+            if os.path.isfile(os.path.join(self.log_dir, 'metadata.tsv')):
+                os.remove(os.path.join(self.log_dir, 'metadata.tsv'))
 
     def _norm1U(self):
         """Normalize the vectors to 1-unit vectors in the Euclidean space.
@@ -86,7 +94,8 @@ class TensorBoardTool:
         self.config = projector.ProjectorConfig()
         self.embedding = self.config.embeddings.add()
         self.embedding.tensor_path = 'embeddings.tsv'
-        self.embedding.metadata_path = 'metadata.tsv'
+        if self.metadata is not None:
+            self.embedding.metadata_path = 'metadata.tsv'
         projector.visualize_embeddings(self.log_dir, self.config)
 
     def run(self):
@@ -117,7 +126,7 @@ def test():
     # Run tensorflow embedding projector setup
     tbTool = TensorBoardTool(
         log_dir=log_dir, embedding_vecs=embeddings,
-        metadata=metadata, metadata_var=metadata_vars
+        metadata=None, metadata_var=metadata_vars
     )
     tbTool.run()
 
