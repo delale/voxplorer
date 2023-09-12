@@ -16,17 +16,29 @@ git clone https://github.com/delale/SpEmViz.git
 Install [miniconda](https://docs.conda.io/projects/miniconda/en/latest/) or [Anaconda](https://www.anaconda.com/download).  
 Open your preferred terminal emulator in the `SpEmViz` directory and install the spmviz conda environment:  
   
-**MacOS**
-```sh
-conda env create -f spemviz_env_OSX.yml
-```
-  
 **WinOS or Linux**
 ```sh
 conda env create -f spemviz_env_Win_and_Linux.yml
 ```
+
+**MacOS**
+```sh
+conda env create -f spemviz_env_OSX.yml
+```
+Sometimes an error during the installation of tensorflow and tensorflow-metal may occur:
+```sh
+Pip failed
+
+ERROR: Could not find a version that satisfices the requirement tensorflow-metal (from versions: None)
+ERROR: No matching distribution found for tensorflow-metal
+```
+In this case run the following commands:
+```sh
+conda activate spemviz
+SYSTEM_VERSION_COMPAT=0 pip install tensorflow tensorflow-metal
+```
   
-Verify installation by running:
+**Verify installation by running:**
 ```sh
 conda activate spemviz
 which python3
