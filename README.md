@@ -1,7 +1,11 @@
 # SpEmViz
-#TODO - DOCUMENT VERY WELL THE INSTALLATION AND USAGE OF SPEMVIZ
-
-# Installation
+|    Table of Contents |
+|     --- |
+|  [Installation](#installation)   |
+|  [Usage](#usage)   |
+|  [Arguments](#arguments)   |
+| [Example Usage](#example-usage) |
+## Installation
 Clone the git repository by running in your preferred terminal emulator:
 ```sh
 git clone https://github.com/delale/SpEmViz.git
@@ -30,7 +34,7 @@ It should return something along the lines of
 or  
 `/Users/your_user/anaconda3/envs/spemviz/bin/python3`
 
-# Usage
+## Usage
 To run the program open a terminal in the SpEmViz directory and run 
 ```sh
 conda activate spemviz
@@ -50,7 +54,7 @@ If you open the second link, you can navigate to the embedding projector by clic
 ![Alt text](<screenshots/Screenshot 2023-09-12 at 16.44.30.png>)
 ![Alt text](<screenshots/Screenshot 2023-09-12 at 16.44.51.png>)
 When you want to exit you can simply close the embedding projector page and in your terminal emulator press CTRL+C.
-# Arguments
+## Arguments
 - `--filepath` or `-f`: path to the data.
 - `--features` or `-x`: embedding features that can have several forms (default: `None`):
   - `-x x1 x2 x3`: will select the features by column names ('x1', 'x2', 'x3')
@@ -66,7 +70,7 @@ When you want to exit you can simply close the embedding projector page and in y
   - `-y None`: no metadata
 - `--log_dir`: (optional) path to the logs directory (default: `./logs/`). The logs directory is where the data for TensorBoard is set-up.
 
-# Example Usage
+## Example Usage
 Given a database with 10 columns of which the last 6 are features (columns 5 through 9) and the first four are metadata variables: filename, speaker, sex, utterance.  
 The database is located in my SpEmViz working directory at `data/db.csv`
 To run the embedding projector with just the features by running:
