@@ -40,7 +40,7 @@ def main():
             - list of strings for variable names
             - list of integers for variable indices
             - 'infer' for only variables not in features
-            - None for those not in metavariables
+            - None for those not in features
             - tuple like (0, 5) for all variables from index 0 to index 5
             (default: None)""",
         nargs='*', default=None
