@@ -1,4 +1,6 @@
 # SpEmViz
+![Embedding Projector](<screenshots/Screenshot 2023-09-12 at 17.48.26.png>)
+![Embedding Projector: selected point](<screenshots/Screenshot 2023-09-12 at 17.48.54.png>)
 |    Table of Contents |
 |     --- |
 |  [Installation](#installation)   |
