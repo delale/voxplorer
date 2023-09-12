@@ -18,15 +18,15 @@ def main():
         The program takes as inputs the path to the data, the metadata variable names 
         or indices if any, the features variable names or indices or None/'all' if 
         all variables are features.
-        To open the projector, click/copy and paste the first link; something like 'http://localhost:60067#projector'.
+        To open the projector, click/copy and paste the first link; something like 'http://localhost:6006/#projector'.
         """
     )
     parser.add_argument(
-        '--path', '-d', help='Path to the data; relative to where the script is running from or absolute.',
+        '--filepath', '-f', help='Path to the data; relative to where the script is running from or absolute.',
         type=str, required=True
     )
     parser.add_argument(
-        '--features', '-x', help="""Feature variables: 
+        '--features', '-x', help="""Feature variables:
             - list of strings for variable names
             - list of integers for variable indices
             - 'all' for all variables
@@ -52,35 +52,43 @@ def main():
     args = parser.parse_args()
 
     # Transform the inputs accordingly
-    if type(args.features) is str:
-        if args.features == 'all':
-            features = args.features
-        elif args.features == 'None':
-            args.features = None
-        elif re.search(re.escape('(', args.features)) and re.search(re.escape(')', args.features)):
-            features = args.features.strip('() ')
+    if args.features is None:
+        features = None
+    elif len(args.features) == 1:
+        if args.features[0] == 'all':
+            features = args.features[0]
+        elif args.features[0] == 'None':
+            features = None
+        elif re.search(re.escape('('), args.features[0]) and re.search(re.escape(')'), args.features[0]):
+            features = args.features[0].strip('() ')
             features = features.split(',')
             lb = int(features[0])
             ub = int(features[1])
             features = list(range(lb, ub+1))
         else:
-            features = [args.features]
+            features = args.features
+    else:
+        features = args.features
 
-    if type(args.metavars) is str:
-        if args.metavars == 'infer':
-            metavars = args.metavars
-        elif args.metavars == 'None':
-            args.metavars = None
-        elif re.search(re.escape('(', args.metavars)) and re.search(re.escape(')', args.metavars)):
-            metavars = args.metavars.strip('() ')
+    if args.metavars is None:
+        metavars = None
+    elif len(args.metavars) == 1:
+        if args.metavars[0] == 'infer':
+            metavars = args.metavars[0]
+        elif args.metavars[0] == 'None':
+            metavars = None
+        elif re.search(re.escape('('), args.metavars[0]) and re.search(re.escape(')'), args.metavars[0]):
+            metavars = args.metavars[0].strip('() ')
             metavars = metavars.split(',')
             lb = int(metavars[0])
             ub = int(metavars[1])
             metavars = list(range(lb, ub+1))
         else:
-            metavars = [args.metavars]
+            metavars = args.metavars
+    else:
+        metavars = args.metavars
 
-    ptd = os.path.join(os.getcwd(), args.path)
+    ptd = os.path.join(os.getcwd(), args.filepath)
     log_dir = os.path.join(os.getcwd(), args.log_dir)
 
     # Run the data_loader function
@@ -93,3 +101,7 @@ def main():
         log_dir=log_dir, embedding_vecs=X, metadata=Y, metadata_var=metavars
     )
     tbTool.run()
+
+
+if __name__ == '__main__':
+    main()

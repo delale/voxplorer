@@ -58,15 +58,15 @@ def load_data(features: list, metavars: list, path_to_data: str):
         elif type(metavars[0]) is int:
             metavars = df.columns[metavars].to_list()
 
-        X = df.loc[:, ~df.columns.isin(metavars)].to_numpy()
-        Y = df.loc[:, metavars].to_numpy()
+        X = df.loc[:, ~df.columns.isin(metavars)].astype(np.float64).to_numpy()
+        Y = df.loc[:, metavars].astype(str).to_numpy()
         return X, Y, metavars
 
     if features is not None and metavars is None:
         if type(features[0]) is int:
             features = df.columns[features]
 
-        X = df.loc[:, features].to_numpy()
+        X = df.loc[:, features].astype(np.float64).to_numpy()
         return X, None, None
 
     if features is not None and metavars is not None:
@@ -74,10 +74,10 @@ def load_data(features: list, metavars: list, path_to_data: str):
             if type(features[0]) is int:
                 features = df.columns[features]
 
-            X = df.loc[:, features].to_numpy()
+            X = df.loc[:, features].astype(np.float64).to_numpy()
             Y = df.loc[:, ~df.columns.isin(features)]
             metavars = Y.columns.to_list()
-            Y = Y.to_numpy()
+            Y = Y.astype(str).to_numpy()
             return X, Y, metavars
         else:
             if type(features[0]) is int:
@@ -85,8 +85,8 @@ def load_data(features: list, metavars: list, path_to_data: str):
             if type(metavars[0]) is int:
                 metavars = df.columns[metavars].to_list()
 
-            X = df.loc[:, features].to_numpy()
-            Y = df.loc[:, metavars].to_numpy()
+            X = df.loc[:, features].astype(np.float64).to_numpy()
+            Y = df.loc[:, metavars].astype(str).to_numpy()
             return X, Y, metavars
 
 

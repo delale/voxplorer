@@ -57,19 +57,23 @@ class TensorBoardTool:
         # Create embedding tsv file
         pd.DataFrame(
             data=self.embedding_vecs
-        ).to_csv(os.path.join(self.log_dir, 'embeddings.tsv'),
-                 sep='\t', header=False, index=False)
+        ).astype(np.float64).to_csv(os.path.join(self.log_dir, 'embeddings.tsv'),
+                                    sep='\t', header=False, index=False)
 
         # Metadata file
         if self.metadata is not None:
-            with open(os.path.join(self.log_dir, 'metadata.tsv'), 'w') as f:
-                if len(self.metadata_var) > 1:
-                    # Write labels for metadata if there are more than 1 vars
-                    f.write('\t'.join(self.metadata_var)+"\n")
-
-                # Write metadata labels
-                for labels in self.metadata:
-                    f.write('\t'.join(labels)+"\n")
+            if len(self.metadata_var) > 1:
+                # Write labels for metadata if there are more than 1 vars
+                pd.DataFrame(
+                    data=self.metadata, columns=self.metadata_var
+                ).to_csv(os.path.join(self.log_dir, 'metadata.tsv'),
+                         sep='\t', index=False)
+            else:
+                # Write only labels
+                pd.DataFrame(
+                    data=self.metadata
+                ).to_csv(os.path.join(self.log_dir, 'metadata.tsv'),
+                         sep='\t', index=False, header=False)
         else:
             if os.path.isfile(os.path.join(self.log_dir, 'metadata.tsv')):
                 os.remove(os.path.join(self.log_dir, 'metadata.tsv'))
