@@ -3,6 +3,7 @@ testing/
 
 # Tensorboard specific files
 for_tensorboard/
+logs/
 
 # Misc.
 .vscode
