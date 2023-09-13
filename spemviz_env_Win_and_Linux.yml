@@ -9,7 +9,7 @@ dependencies:
   - umap-learn
   - pip
   - pip:
-    - pytorch
+    - torch
     - torchaudio
     - speechbrain
     - tensorflow
