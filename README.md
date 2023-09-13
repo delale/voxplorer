@@ -1,12 +1,14 @@
 # SpEmViz
 ![Embedding Projector](<screenshots/Screenshot 2023-09-12 at 17.48.26.png>)
 ![Embedding Projector: selected point](<screenshots/Screenshot 2023-09-12 at 17.48.54.png>)
-|    Table of Contents |
-|     --- |
-|  [Installation](#installation)   |
-|  [Usage](#usage)   |
-|  [Arguments](#arguments)   |
+| Table of Contents               |
+| ------------------------------- |
+| [Installation](#installation)   |
+| [Usage](#usage)                 |
+| [Arguments](#arguments)         |
 | [Example Usage](#example-usage) |
+| [Tips & Tricks](#tips--tricks)  |
+| [Caveats](#caveats)             |
 ## Installation
 Clone the git repository by running in your preferred terminal emulator:
 ```sh
@@ -107,3 +109,28 @@ To run the embedding projector with only `F0`, `F1`, and `HNR` as features and a
 ```sh
 python3 spemviz.py -f ./data/db.csv -x F0 F1 HNR -y "(0 3)"
 ```
+
+## Tips & Tricks
+If you want to use the embedding projector to select data and would like to be able to filter the original data based on 
+this selection you can modifiy the original table by adding a "phantom" variable called `selection` containing only 0s for example (can be any value indicating the unselected data).  
+You can then include this variable in your metatdata when running `spemviz.py`.  
+Going back to the db.csv example we could create such a variable in Python like so:
+```sh
+conda activate spemviz
+python3
+```
+```py
+import pandas as pd
+df = pd.read_csv('./data/db.csv')
+df['selection'] = [0]*df.shape[0]
+df.to_csv('./data/db_sel.csv')
+exit()
+```
+Open embedding projector:
+```sh
+python3 spemviz.py -f ./data/db_sel.csv -x "(5, 9)" -y filename sex speaker selection
+```
+In the embedding projector you can then use the several different tools (rectangle selection, selecting by label for e.g. sex, clicking on point and selecting n nearest neighbours) and then on the left tab, navigate to `Edit by` and change the metadata to edit to `selection`. Then change the value to your preferred selection value (e.g. 1). You can then download the edited metadata by clicking on download. You can then select only those rows with the edited `selection` value and use the key variable (e.g. `filename`) to filter the original data. This works well only when including a key ID variable that is unique for each row in the original dataframe. Theoretically, you can also use the indices of the selected rows to filter the dataframe as they should remain the same (*caveat: if the original contains NAs, the indices will be relative only to the NA-filtered data*).
+
+## Caveats
+- Data that contains NAs: a Warning will be raised and the rows containing NA values will be removed (otherwise TensorBoard will raise an error where it is unable to transorm str to float64).
