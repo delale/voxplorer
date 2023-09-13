@@ -2,17 +2,15 @@ name: spemviz
 channels:
   - defaults
   - conda-forge
-  - pytorch
-  - nvidia
 dependencies:
   - python=3.10.*
   - numpy
   - pandas
   - umap-learn
-  - pytorch
-  - torchaudio
-  - pytorch-cuda=11.7
   - pip
   - pip:
+    - pytorch
+    - torchaudio
     - speechbrain
     - tensorflow
+
