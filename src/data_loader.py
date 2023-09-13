@@ -45,6 +45,11 @@ def load_data(features: list, metavars: list, path_to_data: str):
 
     df = pd.read_csv(path_to_data, sep=sep)
 
+    # Remove an NA values
+    if df.isna().any(axis=None):
+        print("Warning: Data contains NAs\nremoving...")
+        df = df.dropna()
+
     # Feature selection and metadata variable selection
     # Do all checks on features and metavars to understand what needs to go where
     if (features is None and metavars is None) or features == 'all':
