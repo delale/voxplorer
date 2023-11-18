@@ -8,8 +8,7 @@ dependencies:
   - numpy
   - pandas
   - umap-learn
-  - pytorch::pytorch
-  - torchaudio
+  - librosa
   - pip
   - pip:
     - speechbrain
