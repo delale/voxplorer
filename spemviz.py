@@ -9,7 +9,7 @@ import os
 import argparse
 import re
 
-from src import data_loader, embedding_projector
+from lib import data_loader, embedding_projector
 
 
 def main():

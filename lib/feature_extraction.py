@@ -9,14 +9,14 @@ import librosa
 
 
 # helper of mel_features() to extract delta and delta-delta coefficients
-def _delta_delta(mfccs: np.ndarray):
+def _delta_delta(mfccs: np.ndarray) -> np.ndarray:
     """
     Computes delta and delta-delta coefficients from MFCCs.
 
     Parameters:
     -----------
     mfccs : np.ndarray
-        MFCCs for each frame in the audio file. Shape is (n_frames, n_mfccs).
+        MFCCs for each frame in the audio file.
 
     Returns:
     --------
@@ -35,8 +35,24 @@ def _delta_delta(mfccs: np.ndarray):
 
 
 # helper of mel_features() to summarise mfccs by utterance
-def _summarise_mfccs(mfccs: np.ndarray):
-    pass
+def _summarise_mfccs(features_vec: np.ndarray) -> np.ndarray:
+    """
+    Summarises MFCCs by utterance.
+
+    Parameters:
+    -----------
+    features_vec : np.ndarray
+        MFCCs (and delta-delta features) for each frame in the audio file.
+
+    Returns:
+    --------
+    np.ndarray
+        Mean and standard deviation of features for each utterance. Shape is
+        (n_features*2,)
+    """
+    return np.concatenate(
+        (np.mean(features_vec, axis=0), np.std(features_vec, axis=0)), axis=0
+    )
 
 
 # MFCCs extraction
@@ -52,7 +68,7 @@ def mel_features(
     lifter: int = 22,
     deltas: bool = False,
     summarise: bool = False
-):
+) -> np.ndarray:
     """
     Extracts mfccs (and optionally delta-delta) from audio file.
 
