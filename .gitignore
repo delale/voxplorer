@@ -1,5 +1,6 @@
 # Testing data
 testing/
+tests/
 
 # Tensorboard specific files
 for_tensorboard/
