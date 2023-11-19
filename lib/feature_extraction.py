@@ -29,13 +29,13 @@ def _delta_delta(mfccs: np.ndarray) -> np.ndarray:
     delta_delta = librosa.feature.delta(mfccs, order=2)
 
     # concatenate features
-    features_vec = np.concatenate((mfccs, delta, delta_delta), axis=1)
+    features_vec = np.concatenate((mfccs, delta, delta_delta), axis=0)
 
     return features_vec
 
 
 # helper of mel_features() to summarise mfccs by utterance
-def _summarise_mfccs(features_vec: np.ndarray) -> np.ndarray:
+def _summarise_features(features_vec: np.ndarray) -> np.ndarray:
     """
     Summarises MFCCs by utterance.
 
@@ -51,7 +51,7 @@ def _summarise_mfccs(features_vec: np.ndarray) -> np.ndarray:
         (n_features*2,)
     """
     return np.concatenate(
-        (np.mean(features_vec, axis=0), np.std(features_vec, axis=0)), axis=0
+        (np.mean(features_vec, axis=1), np.std(features_vec, axis=1)), axis=0
     )
 
 
@@ -134,7 +134,7 @@ def mel_features(
 
     # summarise by utterance
     if summarise:
-        features_vec = _summarise_mfccs(features_vec)
+        features_vec = _summarise_features(features_vec)
 
     return features_vec.T
 
