@@ -4,6 +4,7 @@
 
 import numpy as np
 import librosa
+import parselmouth
 
 # TODO: create function to extract mfccs (and delta-delta) from audio file
 
@@ -143,5 +144,43 @@ def mel_features(
 # picth, formants, hnr, jittter, shimmer, spectral entropy,
 # energy, zero-crossing-rate, spectral bandwidth, spectral contrast,
 # spectral roll-off, formant dispersion
+def acoustic_features(audio_file: str) -> np.ndarray:
+    """
+    Extracts acoustic features from audio file.
+
+    Parameters:
+    -----------
+    audio_file : str
+        Path to audio file.
+
+    Returns:
+    --------
+    features_vec : np.ndarray
+        Acoustic features for each frame in the audio file. Shape is (n_features,).
+        The extracted features are:
+        - pitch (auto-correlation)
+        - formants (burg)
+        - formant dispersion (average)
+        - hnr
+        - jitter
+        - shimmer
+        - energy
+        - spectral entropy
+        - spectral bandwidth
+        - spectral contrast
+        - spectral roll-off
+        - spectral centroid
+        - zero-crossing-rate
+    """
+    # Load audio
+    y, sr = librosa.load(audio_file, sr=None)
+    sound = parselmouth.Sound(audio_file)
+
+    # Pitch
+    pitch = sound.to_pitch()
+    pitch_values = pitch.selected_array['frequency']
+
+    # Formants and formant dispersion
+    formant = sound.to_formant_burg()
 
 # TODO: create function to extract LPCCs and LPC residual
