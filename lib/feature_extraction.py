@@ -1,7 +1,7 @@
 # TODO: create mfccs extraction with possibility to have:
 #   - deltas (both or only first)
 #   - summarised by utterance
-
+from typing import Tuple
 import numpy as np
 import librosa
 import parselmouth
@@ -140,11 +140,77 @@ def mel_features(
     return features_vec.T
 
 
+# pitch helper
+def _pitch(
+    sound: parselmouth.Sound, time_step: float = 0.0, f0min: float = 75.0, f0max: float = 600.0,
+    max_candidates: int = 15, silence_threshold: float = 0.03,
+    voicing_threshold: float = 0.45, octave_cost: float = 0.01,
+    octave_jump_cost: float = 0.35, voiced_unvoiced_cost: float = 0.14
+) -> Tuple[float, ...]:
+    """
+    Extracts pitch features from audio file using cross-correlation method.
+
+    Parameters:
+    -----------
+    sound : parselmouth.Sound
+        Parselmouth sound object.
+    time_step : float
+        Time step in seconds (default=0.0 (=auto)).
+    f0min : float
+        Minimum pitch frequency in Hz.
+    f0max : float
+        Maximum pitch frequency in Hz.
+    max_candidates : int
+        Maximum number of candidates.
+    silence_threshold : float
+        Threshold for silence.
+    voicing_threshold : float
+        Threshold for voicing.
+    octave_cost : float
+        Cost for octave.
+    octave_jump_cost : float
+        Cost for octave jump.
+    voiced_unvoiced_cost : float
+        Cost for unvoiced.
+
+    Returns:
+    --------
+    pitch_features : Tuple[float, ...]
+        Pitch features for each frame in the audio file. Shape is (n_frames,).
+        The extracted features are:
+        - mean pitch
+        - median pitch
+        - minimum pitch
+        - maximum pitch
+        - standard deviation of pitch
+    """
+    pitch: parselmouth.Pitch = parselmouth.praat.call(
+        sound, "To Pitch (cc)",
+        time_step, f0min, max_candidates, True, silence_threshold,
+        voicing_threshold, octave_cost, octave_jump_cost,
+        voiced_unvoiced_cost, f0max
+    )
+    mean_pitch: float = parselmouth.praat.call(
+        pitch, 'Get mean', 0, 0, 'Hertz')
+    med_pitch: float = parselmouth.praat.call(
+        pitch, 'Get quantile', 0, 0, 0.5, 'Hertz')
+    min_pitch: float = parselmouth.praat.call(
+        pitch, 'Get minimum', 0, 0, 'Hertz', 'Parabolic')
+    max_pitch: float = parselmouth.praat.call(
+        pitch, 'Get maximum', 0, 0, 'Hertz', 'Parabolic')
+    std_pitch: float = parselmouth.praat.call(
+        pitch, 'Get standard deviation', 0, 0, 'Hertz')
+    return mean_pitch, med_pitch, min_pitch, max_pitch, std_pitch
+
+
 # TODO: create function to extract spectral features
 # picth, formants, hnr, jittter, shimmer, spectral entropy,
 # energy, zero-crossing-rate, spectral bandwidth, spectral contrast,
 # spectral roll-off, formant dispersion
-def acoustic_features(audio_file: str) -> np.ndarray:
+def acoustic_features(
+        audio_file: str,
+        f0min: float = 75.0, f0max: float = 600.0,
+) -> np.ndarray:
     """
     Extracts acoustic features from audio file.
 
@@ -152,13 +218,18 @@ def acoustic_features(audio_file: str) -> np.ndarray:
     -----------
     audio_file : str
         Path to audio file.
+    f0min : float
+        Minimum pitch frequency in Hz.
+    f0max : float
+        Maximum pitch frequency in Hz.
+
 
     Returns:
     --------
     features_vec : np.ndarray
         Acoustic features for each frame in the audio file. Shape is (n_features,).
         The extracted features are:
-        - pitch (auto-correlation)
+        - pitch (cross-correlation): mean, median, minimum, maximum, standard deviation
         - formants (burg)
         - formant dispersion (average)
         - hnr
@@ -173,14 +244,15 @@ def acoustic_features(audio_file: str) -> np.ndarray:
         - zero-crossing-rate
     """
     # Load audio
+    y: np.ndarray
+    sr: int
     y, sr = librosa.load(audio_file, sr=None)
-    sound = parselmouth.Sound(audio_file)
+    sound: parselmouth.Sound = parselmouth.Sound(audio_file)
 
     # Pitch
-    pitch = sound.to_pitch()
-    pitch_values = pitch.selected_array['frequency']
+    pitch_features: Tuple[float, ...] = _pitch(sound, f0min, f0max)
 
     # Formants and formant dispersion
-    formant = sound.to_formant_burg()
+    # formant = sound.to_formant_burg()
 
 # TODO: create function to extract LPCCs and LPC residual
