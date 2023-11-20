@@ -5,9 +5,6 @@ from typing import Tuple
 import numpy as np
 import librosa
 import parselmouth
-import scipy
-
-# TODO: create function to extract mfccs (and delta-delta) from audio file
 
 
 # helper of mel_features() to extract delta and delta-delta coefficients
@@ -37,15 +34,15 @@ def _delta_delta(mfccs: np.ndarray) -> np.ndarray:
     return features_vec
 
 
-# helper of mel_features() to summarise mfccs by utterance
+# helper to summarise features by utterance
 def _summarise_features(features_vec: np.ndarray) -> np.ndarray:
     """
-    Summarises MFCCs by utterance.
+    Summarises features by utterance.
 
     Parameters:
     -----------
     features_vec : np.ndarray
-        MFCCs (and delta-delta features) for each frame in the audio file.
+        features vector for each frame in the audio file. Shape is (n_features, n_frames).
 
     Returns:
     --------
@@ -461,9 +458,67 @@ def acoustic_features(
 
 # Low level features
 def low_lvl_features(
-
+    audio_file: str, win_length: float = 25, overlap: float = 10,
+    premphasis: float = 0.95, use_mean_contrasts: bool = False,
+    summarise: bool = False
 ):
-    pass
+    # Load audio
+    y: np.ndarray
+    sr: int
+    y, sr = librosa.load(audio_file, sr=None)  # load audio file
+
+    # pre-emphasis filter
+    y: np.ndarray = librosa.effects.preemphasis(y, coef=premphasis)
+
+    # compute frame length and overlap in samples
+    n_fft: int = int(win_length * sr / 1000)
+    hop_length: int = int(overlap * sr / 1000)
+
+    # Spectral centroid
+    spectral_centroids: np.ndarray = librosa.feature.spectral_centroid(
+        y=y, sr=sr, n_fft=n_fft, hop_length=hop_length, window='hamming'
+    )
+
+    # Spectral bandwidth
+    spectral_bandwidths: np.ndarray = librosa.feature.spectral_bandwidth(
+        y=y, sr=sr, n_fft=n_fft, hop_length=hop_length, window='hamming'
+    )
+
+    # Spectral contrast
+    spectral_contrasts: np.ndarray = librosa.feature.spectral_contrast(
+        y=y, sr=sr, n_fft=n_fft, hop_length=hop_length, window='hamming'
+    )
+    if use_mean_contrasts:
+        spectral_contrasts: np.ndarray = np.mean(
+            spectral_contrasts, axis=0, keepdims=True
+        )
+
+    # Spectral flatness
+    spectral_flatness: np.ndarray = librosa.feature.spectral_flatness(
+        y=y, n_fft=n_fft, hop_length=hop_length, window='hamming'
+    )
+
+    # Spectral rolloff
+    spectral_rolloff: np.ndarray = librosa.feature.spectral_rolloff(
+        y=y, sr=sr, n_fft=n_fft, hop_length=hop_length, window='hamming'
+    )
+
+    # Zero crossing rate
+    zero_crossing_rate: np.ndarray = librosa.feature.zero_crossing_rate(
+        y=y, frame_length=n_fft, hop_length=hop_length
+    )
+
+    # Concatenate features
+    features_vec: np.ndarray = np.concatenate(
+        (spectral_centroids, spectral_bandwidths, spectral_contrasts,
+         spectral_flatness, spectral_rolloff, zero_crossing_rate), axis=0
+    )
+
+    # Summarise by utterance
+    if summarise:
+        features_vec: np.ndarray = _summarise_features(features_vec)
+
+    return features_vec.T
 
 
 # TODO: create function to extract LPCCs and LPC residual
