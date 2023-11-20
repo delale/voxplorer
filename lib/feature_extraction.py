@@ -461,7 +461,38 @@ def low_lvl_features(
     audio_file: str, win_length: float = 25, overlap: float = 10,
     premphasis: float = 0.95, use_mean_contrasts: bool = False,
     summarise: bool = False
-):
+) -> np.ndarray:
+    """
+    Extract low-level features from audio file.
+
+    Parameters:
+    -----------
+    audio_file : str
+        Path to audio file.
+    win_length : float
+        Window length in milliseconds.
+    overlap : float
+        Overlap length in milliseconds.
+    premphasis : float
+        Coefficient for pre-emphasis filter.
+    use_mean_contrasts : bool
+        Take the mean of spectral contrasts over spectral bands. default=False.
+    summarise : bool
+        Whether to summarise features by utterance. If True, returns mean and standard
+        deviation of features for each utterance.
+
+    Returns:
+    --------
+    features_vec : np.ndarray
+        Low-level features for each frame in the audio file. Shape is (n_frames, n_features).
+        The extracted features are:
+        - spectral centroid
+        - spectral bandwidth
+        - spectral contrasts
+        - spectral flatness
+        - spectral rolloff
+        - zero crossing rate
+    """
     # Load audio
     y: np.ndarray
     sr: int
