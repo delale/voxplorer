@@ -1,6 +1,6 @@
 # Testing data
-testing/
-tests/
+tests/data/!*.wav
+
 
 # Tensorboard specific files
 for_tensorboard/
