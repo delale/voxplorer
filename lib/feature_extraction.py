@@ -5,6 +5,7 @@ from typing import Tuple
 import numpy as np
 import librosa
 import parselmouth
+import scipy
 
 # TODO: create function to extract mfccs (and delta-delta) from audio file
 
@@ -360,12 +361,29 @@ def _jitter_shimmer(
     )
     return jitter, shimmer
 
-# TODO: create function to extract spectral features
-# picth, formants, hnr, jittter, shimmer, spectral entropy,
-# energy, zero-crossing-rate, spectral bandwidth, spectral contrast,
-# spectral roll-off, formant dispersion
+
+# Helper for rms_energy
+def _rms_energy(sound: parselmouth.Sound) -> float:
+    """
+    Extracts rms energy from audio file.
+
+    Parameters:
+    -----------
+    sound : parselmouth.Sound
+        Parselmouth sound object.
+
+    Returns:
+    --------
+    rms_energy : float
+        Root mean square energy.
+    """
+    amplitude_square: np.ndarray = sound.values ** 2
+    mean_amplitude_square: float = np.mean(amplitude_square)
+    rms_energy: float = np.sqrt(mean_amplitude_square)
+    return rms_energy
 
 
+# Create function to extract common acoustic features
 def acoustic_features(
         audio_file: str,
         f0min: float = 75.0, f0max: float = 600.0,
@@ -382,30 +400,24 @@ def acoustic_features(
     f0max : float
         Maximum pitch frequency in Hz.
 
-
     Returns:
     --------
     features_vec : np.ndarray
         Acoustic features for each frame in the audio file. Shape is (n_features,).
         The extracted features are:
         - pitch (cross-correlation): mean, median, minimum, maximum, standard deviation
-        - formants (burg)
-        - formant dispersion (average)
+        - formants (burg): F1, F2, F3, F4 averages
+        - formant dispersion
+        - average formant
+        - geometric mean of formants
+        - fitch vtl
+        - delta f
         - hnr
         - jitter
         - shimmer
-        - energy
-        - spectral entropy
-        - spectral bandwidth
-        - spectral contrast
-        - spectral roll-off
-        - spectral centroid
-        - zero-crossing-rate
+        - energy (rms)
     """
     # Load audio
-    y: np.ndarray
-    sr: int
-    y, sr = librosa.load(audio_file, sr=None)
     sound: parselmouth.Sound = parselmouth.Sound(audio_file)
 
     # Pitch
@@ -436,9 +448,22 @@ def acoustic_features(
     shimmer: float
     jitter, shimmer = _jitter_shimmer(sound=sound)
 
-    # Energy
-    intensity: float = sound.to_intensity()
-    mean_energy: float = np.mean(np.sum(intensity.values ** 2))  # FIXME
+    # RMS energy
+    rms_energy: float = _rms_energy(sound=sound)
+
+    # Concatenate features
+    features_vec: np.ndarray = np.concatenate(
+        (pitch_features, formants_features, vt_estimates,
+         (hnr, jitter, shimmer, rms_energy)), axis=0
+    )
+    return features_vec
+
+
+# Low level features
+def low_lvl_features(
+
+):
+    pass
 
 
 # TODO: create function to extract LPCCs and LPC residual
