@@ -14,51 +14,77 @@ class FeatureExtractor:
     Parameters:
     -----------
     audio_dir : str
-        Path to directory containing audio files.
+        Path to directory containing audio files. Can also be a path to a single audio file.
     feature_methods : dict
         Dictionary of feature extraction methods to use. Keys are the names of the
         feature extraction methods, values are the arguments to pass to the methods.
-        Methods are: 'mel_features', 'acoustic_features', 'low_lvl_features', 'lpcc'.
+        Methods are: 'mel_features', 'acoustic_features', 'low_lvl_features', 'lpc_features'.
         Example:
         feature_methods = {
             'mel_features': {'n_mfcc': 13, 'n_mels': 40, 'win_length': 25, 'overlap': 10, summarise=True},
             'acoustic_features': {'f0min': 75, 'f0max': 600},
             'low_lvl_features': {'win_length': 25, 'overlap': 10},
-            'lpcc': {'n_lpcc': 13, 'win_length': 25, 'overlap': 10}
+            'lpc_features': {'n_lpcc': 13, 'win_length': 25, 'overlap': 10}
         }
 
     Attributes:
     -----------
     audio_dir : str
-        Path to directory containing audio files.
+        Path to directory containing audio files. Can also be a path to a single audio file.
     feature_methods : dict
         Dictionary of feature extraction methods to use. Keys are the names of the
         feature extraction methods, values are the arguments to pass to the methods.
-        Methods are: 'mel_features', 'acoustic_features', 'low_lvl_features', 'lpcc'.
+        Methods are: 'mel_features', 'acoustic_features', 'low_lvl_features', 'lpc_features'.
         Example:
         feature_methods = {
             'mel_features': {'n_mfcc': 13, 'n_mels': 40, 'win_length': 25, 'overlap': 10, summarise=True},
             'acoustic_features': {'f0min': 75, 'f0max': 600},
             'low_lvl_features': {'win_length': 25, 'overlap': 10},
-            'lpcc': {'n_lpcc': 13, 'win_length': 25, 'overlap': 10}
+            'lpc_features': {'n_lpcc': 13, 'win_length': 25, 'overlap': 10}
         }
     audio_files : list
         List of audio files in audio_dir.
     features : np.ndarray
         Extracted features. Shape is (n_files, n_features) when summarise=True for 
-        mel_features, low_lvl_features, lpcc. If summarise=False, shape is (n_files x n_frames, n_features).
+        mel_features, low_lvl_features, lpc_features. If summarise=False, shape is (n_files x n_frames, n_features).
     """
 
     def __init__(self, audio_dir: str, feature_methods: dict):
         self.audio_dir: str = audio_dir
         self.feature_methods: dict = feature_methods
-        self.audio_files: list = [os.path.join(
-            self.audio_dir, f) for f in os.listdir(audio_dir) if f.endswith('.wav')]
+        if os.path.isdir(audio_dir):
+            self.audio_files: list = [os.path.join(
+                self.audio_dir, f) for f in os.listdir(audio_dir) if f.endswith('.wav')]
+        elif self.audio_dir.endswith('.wav'):
+            self.audio_files: list = [self.audio_dir]
+        else:
+            raise ValueError(
+                "audio_dir must be a directory containing .wav files or a .wav file.")
+
+    # helper to summarise features by utterance
+
+    def _summarise_features(self, features_vec: np.ndarray) -> np.ndarray:
+        """
+        Summarises features by utterance.
+
+        Parameters:
+        -----------
+        features_vec : np.ndarray
+            features vector for each frame in the audio file. Shape is (n_features, n_frames).
+
+        Returns:
+        --------
+        np.ndarray
+            Mean and standard deviation of features for each utterance. Shape is
+            (n_features*2,)
+        """
+        return np.concatenate(
+            (np.mean(features_vec, axis=1), np.std(features_vec, axis=1)), axis=0
+        )
 
     # helper of mel_features() to extract delta and delta-delta coefficients
 
-    @staticmethod
-    def _delta_delta(mfccs: np.ndarray) -> np.ndarray:
+    def _delta_delta(self, mfccs: np.ndarray) -> np.ndarray:
         """
         Computes delta and delta-delta coefficients from MFCCs.
 
@@ -83,31 +109,269 @@ class FeatureExtractor:
 
         return features_vec
 
-    # helper to summarise features by utterance
+    # pitch helper
 
-    @staticmethod
-    def _summarise_features(features_vec: np.ndarray) -> np.ndarray:
+    def _pitch(
+        self,
+        sound: parselmouth.Sound,
+        time_step: float = 0.0,
+        f0min: float = 75.0,
+        f0max: float = 600.0,
+        max_candidates: int = 15,
+        silence_threshold: float = 0.03,
+        voicing_threshold: float = 0.45,
+        octave_cost: float = 0.01,
+        octave_jump_cost: float = 0.35,
+        voiced_unvoiced_cost: float = 0.14
+    ) -> Tuple[float, ...]:
         """
-        Summarises features by utterance.
+        Extracts pitch features from audio file using cross-correlation method.
 
         Parameters:
         -----------
-        features_vec : np.ndarray
-            features vector for each frame in the audio file. Shape is (n_features, n_frames).
+        sound : parselmouth.Sound
+            Parselmouth sound object.
+        time_step : float
+            Time step in seconds (default=0.0 (=auto)).
+        f0min : float
+            Minimum pitch frequency in Hz.
+        f0max : float
+            Maximum pitch frequency in Hz.
+        max_candidates : int
+            Maximum number of candidates.
+        silence_threshold : float
+            Threshold for silence.
+        voicing_threshold : float
+            Threshold for voicing.
+        octave_cost : float
+            Cost for octave.
+        octave_jump_cost : float
+            Cost for octave jump.
+        voiced_unvoiced_cost : float
+            Cost for unvoiced.
 
         Returns:
         --------
-        np.ndarray
-            Mean and standard deviation of features for each utterance. Shape is
-            (n_features*2,)
+        pitch_features : Tuple[float, ...]
+            Pitch features for each frame in the audio file. Shape is (n_frames,).
+            The extracted features are:
+            - mean pitch
+            - median pitch
+            - minimum pitch
+            - maximum pitch
+            - standard deviation of pitch
         """
-        return np.concatenate(
-            (np.mean(features_vec, axis=1), np.std(features_vec, axis=1)), axis=0
+        pitch: parselmouth.Pitch = parselmouth.praat.call(
+            sound, "To Pitch (cc)",
+            time_step, f0min, max_candidates, True, silence_threshold,
+            voicing_threshold, octave_cost, octave_jump_cost,
+            voiced_unvoiced_cost, f0max
         )
+        mean_pitch: float = parselmouth.praat.call(
+            pitch, 'Get mean', 0, 0, 'Hertz')
+        med_pitch: float = parselmouth.praat.call(
+            pitch, 'Get quantile', 0, 0, 0.5, 'Hertz')
+        min_pitch: float = parselmouth.praat.call(
+            pitch, 'Get minimum', 0, 0, 'Hertz', 'Parabolic')
+        max_pitch: float = parselmouth.praat.call(
+            pitch, 'Get maximum', 0, 0, 'Hertz', 'Parabolic')
+        std_pitch: float = parselmouth.praat.call(
+            pitch, 'Get standard deviation', 0, 0, 'Hertz')
+        return mean_pitch, med_pitch, min_pitch, max_pitch, std_pitch
+
+    # formants helper
+
+    def _formants(
+        self,
+        sound: parselmouth.Sound,
+        maximum_formant: int = 5000
+    ) -> Tuple[float, ...]:
+        """
+        Extracts formants from audio file using Burg method.
+
+        Parameters:
+        -----------
+        sound : parselmouth.Sound
+            Parselmouth sound object.
+        maximum_formant : int
+            Maximum formant frequency in Hz.
+
+        Returns:
+        --------
+        formants_features : Tuple[float, ...]
+            Mean F1, F2, F3, F4.
+        """
+        formants: parselmouth.Formant = sound.to_formant_burg(
+            maximum_formant=maximum_formant)
+        f1: float = parselmouth.praat.call(
+            formants, 'Get mean', 1, 0, 0, 'Hertz')
+        f2: float = parselmouth.praat.call(
+            formants, 'Get mean', 2, 0, 0, 'Hertz')
+        f3: float = parselmouth.praat.call(
+            formants, 'Get mean', 3, 0, 0, 'Hertz')
+        f4: float = parselmouth.praat.call(
+            formants, 'Get mean', 4, 0, 0, 'Hertz')
+
+        return f1, f2, f3, f4
+
+    # Helper for vocal tract estimates; code inspired from Voicelab (github.com/Voice-Lab)
+
+    def _vocal_tract_estimates(
+        self,
+        formants: Tuple[float, ...],
+    ) -> Tuple[float, ...]:
+        """
+        Extract vocal tract estimates measures from audio file.
+
+        Parameters:
+        -----------
+        formants : Tuple[float, ...]
+            Mean formants in the audio file (F1, F2, F3, F4).
+
+        Returns:
+        --------
+        formant_dispersion : float
+            Formant dispersion.
+        avg_formant : float
+            Average formant.
+        geometric_mean : float
+            Geometric mean.
+        fitch_vtl : float
+            Fitch VTL.
+        delta_f : float
+            Delta f.
+        """
+        # Extract formant means
+        f1: float = formants[0]
+        f2: float = formants[1]
+        f3: float = formants[2]
+        f4: float = formants[3]
+
+        # Formant dispersion
+        formant_dispersion: float = (f4 - f1) / 3
+
+        # Average formant
+        avg_formant: float = (f1 + f2 + f3 + f4) / 4
+
+        # Geometric mean
+        geometric_mean: float = (f1 * f2 * f3 * f4) ** 0.25
+
+        # Fitch VTL
+        fitch_vtl: float = ((1 * (35000 / (4 * f1))) + (3 * (35000 / (4 * f2))) +
+                            (5 * (35000 / (4 * f3))) + (7 * (35000 / (4 * f4)))) / 4
+
+        # delta f
+        xysum: float = (0.5 * f1) + (1.5 * f2) + (2.5 * f3) + (3.5 * f4)
+        xsquaredsum: float = (0.5 ** 2) + (1.5 ** 2) + (2.5 ** 2) + (3.5 ** 2)
+        delta_f: float = xysum / xsquaredsum
+
+        return formant_dispersion, avg_formant, geometric_mean, fitch_vtl, delta_f
+
+    # Helper for harmonics-to-noise ratio
+
+    def _hnr(
+        self,
+        sound: parselmouth.Sound,
+        time_step: float = 0.01,
+        fmin: float = 75.0,
+        silence_threshold: float = 0.1,
+        periods_per_window: float = 1.0
+    ) -> float:
+        """
+        Extracts harmonics-to-noise ratio from audio file using cc method.
+
+        Parameters:
+        -----------
+        sound : parselmouth.Sound
+            Parselmouth sound object.
+        time_step : float
+            Time step in seconds (default=0.01).
+        fmin : float
+            Minimum pitch frequency in Hz.
+        silence_threshold : float
+            Threshold for silence.
+        periods_per_window : float
+            Number of periods per window.
+
+        Returns:
+        --------
+        hnr : float
+            Harmonics-to-noise ratio.
+        """
+        harmonicity: parselmouth.Harmonicity = parselmouth.praat.call(
+            sound, "To Harmonicity (cc)",
+            time_step, fmin, silence_threshold, periods_per_window
+        )
+        hnr: float = parselmouth.praat.call(harmonicity, "Get mean", 0, 0)
+        return hnr
+
+    # Helper for jitter and shimmer
+
+    def _jitter_shimmer(
+        self,
+        sound: parselmouth.Sound,
+        fmin: float = 75.0,
+        fmax: float = 600.0
+    ) -> Tuple[float, float]:
+        """
+        Extracts jitter and shimmer from audio file using cc method.
+
+        Parameters:
+        -----------
+        sound : parselmouth.Sound
+            Parselmouth sound object.
+        fmin : float
+            Minimum pitch frequency in Hz.
+        fmax : float
+            Maximum pitch frequency in Hz.
+
+        Returns:
+        --------
+        jitter : float
+            Jitter.
+        shimmer : float
+            Shimmer.
+        """
+        point_process: parselmouth.Data = parselmouth.praat.call(
+            sound, "To PointProcess (periodic, cc)",
+            fmin, fmax
+        )
+
+        jitter: float = parselmouth.praat.call(
+            point_process, "Get jitter (local)", 0, 0, 0.0001, 0.02, 1.3
+        )
+        shimmer: float = parselmouth.praat.call(
+            [sound,
+                point_process], "Get shimmer (local)", 0, 0, 0.0001, 0.02, 1.3, 1.6
+        )
+        return jitter, shimmer
+
+    # Helper for rms_energy
+
+    def _rms_energy(
+        self,
+        sound: parselmouth.Sound
+    ) -> float:
+        """
+        Extracts rms energy from audio file.
+
+        Parameters:
+        -----------
+        sound : parselmouth.Sound
+            Parselmouth sound object.
+
+        Returns:
+        --------
+        rms_energy : float
+            Root mean square energy.
+        """
+        amplitude_square: np.ndarray = sound.values ** 2
+        mean_amplitude_square: float = np.mean(amplitude_square)
+        rms_energy: float = np.sqrt(mean_amplitude_square)
+        return rms_energy
 
     # MFCCs extraction
 
-    @staticmethod
     def mel_features(
         self,
         y: np.ndarray,
@@ -198,256 +462,8 @@ class FeatureExtractor:
 
         return features_vec.T
 
-    # pitch helper
+    # Common acoustic features
 
-    @staticmethod
-    def _pitch(
-        sound: parselmouth.Sound, time_step: float = 0.0, f0min: float = 75.0, f0max: float = 600.0,
-        max_candidates: int = 15, silence_threshold: float = 0.03,
-        voicing_threshold: float = 0.45, octave_cost: float = 0.01,
-        octave_jump_cost: float = 0.35, voiced_unvoiced_cost: float = 0.14
-    ) -> Tuple[float, ...]:
-        """
-        Extracts pitch features from audio file using cross-correlation method.
-
-        Parameters:
-        -----------
-        sound : parselmouth.Sound
-            Parselmouth sound object.
-        time_step : float
-            Time step in seconds (default=0.0 (=auto)).
-        f0min : float
-            Minimum pitch frequency in Hz.
-        f0max : float
-            Maximum pitch frequency in Hz.
-        max_candidates : int
-            Maximum number of candidates.
-        silence_threshold : float
-            Threshold for silence.
-        voicing_threshold : float
-            Threshold for voicing.
-        octave_cost : float
-            Cost for octave.
-        octave_jump_cost : float
-            Cost for octave jump.
-        voiced_unvoiced_cost : float
-            Cost for unvoiced.
-
-        Returns:
-        --------
-        pitch_features : Tuple[float, ...]
-            Pitch features for each frame in the audio file. Shape is (n_frames,).
-            The extracted features are:
-            - mean pitch
-            - median pitch
-            - minimum pitch
-            - maximum pitch
-            - standard deviation of pitch
-        """
-        pitch: parselmouth.Pitch = parselmouth.praat.call(
-            sound, "To Pitch (cc)",
-            time_step, f0min, max_candidates, True, silence_threshold,
-            voicing_threshold, octave_cost, octave_jump_cost,
-            voiced_unvoiced_cost, f0max
-        )
-        mean_pitch: float = parselmouth.praat.call(
-            pitch, 'Get mean', 0, 0, 'Hertz')
-        med_pitch: float = parselmouth.praat.call(
-            pitch, 'Get quantile', 0, 0, 0.5, 'Hertz')
-        min_pitch: float = parselmouth.praat.call(
-            pitch, 'Get minimum', 0, 0, 'Hertz', 'Parabolic')
-        max_pitch: float = parselmouth.praat.call(
-            pitch, 'Get maximum', 0, 0, 'Hertz', 'Parabolic')
-        std_pitch: float = parselmouth.praat.call(
-            pitch, 'Get standard deviation', 0, 0, 'Hertz')
-        return mean_pitch, med_pitch, min_pitch, max_pitch, std_pitch
-
-    # formants helper
-
-    @staticmethod
-    def _formants(
-        sound: parselmouth.Sound, maximum_formant: int = 5000
-    ) -> Tuple[float, ...]:
-        """
-        Extracts formants from audio file using Burg method.
-
-        Parameters:
-        -----------
-        sound : parselmouth.Sound
-            Parselmouth sound object.
-        maximum_formant : int
-            Maximum formant frequency in Hz.
-
-        Returns:
-        --------
-        formants_features : Tuple[float, ...]
-            Mean F1, F2, F3, F4.
-        """
-        formants: parselmouth.Formant = sound.to_formant_burg(
-            maximum_formant=maximum_formant)
-        f1: float = parselmouth.praat.call(
-            formants, 'Get mean', 1, 0, 0, 'Hertz')
-        f2: float = parselmouth.praat.call(
-            formants, 'Get mean', 2, 0, 0, 'Hertz')
-        f3: float = parselmouth.praat.call(
-            formants, 'Get mean', 3, 0, 0, 'Hertz')
-        f4: float = parselmouth.praat.call(
-            formants, 'Get mean', 4, 0, 0, 'Hertz')
-
-        return f1, f2, f3, f4
-
-    # Helper for vocal tract estimates; code inspired from Voicelab (github.com/Voice-Lab)
-
-    @staticmethod
-    def _vocal_tract_estimates(
-        formants: Tuple[float, ...],
-    ) -> Tuple[float, ...]:
-        """
-        Extract vocal tract estimates measures from audio file.
-
-        Parameters:
-        -----------
-        formants : Tuple[float, ...]
-            Mean formants in the audio file (F1, F2, F3, F4).
-
-        Returns:
-        --------
-        formant_dispersion : float
-            Formant dispersion.
-        avg_formant : float
-            Average formant.
-        geometric_mean : float
-            Geometric mean.
-        fitch_vtl : float
-            Fitch VTL.
-        delta_f : float
-            Delta f.
-        """
-        # Extract formant means
-        f1: float = formants[0]
-        f2: float = formants[1]
-        f3: float = formants[2]
-        f4: float = formants[3]
-
-        # Formant dispersion
-        formant_dispersion: float = (f4 - f1) / 3
-
-        # Average formant
-        avg_formant: float = (f1 + f2 + f3 + f4) / 4
-
-        # Geometric mean
-        geometric_mean: float = (f1 * f2 * f3 * f4) ** 0.25
-
-        # Fitch VTL
-        fitch_vtl: float = ((1 * (35000 / (4 * f1))) + (3 * (35000 / (4 * f2))) +
-                            (5 * (35000 / (4 * f3))) + (7 * (35000 / (4 * f4)))) / 4
-
-        # delta f
-        xysum: float = (0.5 * f1) + (1.5 * f2) + (2.5 * f3) + (3.5 * f4)
-        xsquaredsum: float = (0.5 ** 2) + (1.5 ** 2) + (2.5 ** 2) + (3.5 ** 2)
-        delta_f: float = xysum / xsquaredsum
-
-        return formant_dispersion, avg_formant, geometric_mean, fitch_vtl, delta_f
-
-    # Helper for harmonics-to-noise ratio
-
-    @staticmethod
-    def _hnr(
-        sound: parselmouth.Sound, time_step: float = 0.01, fmin: float = 75.0,
-        silence_threshold: float = 0.1, periods_per_window: float = 1.0
-    ) -> float:
-        """
-        Extracts harmonics-to-noise ratio from audio file using cc method.
-
-        Parameters:
-        -----------
-        sound : parselmouth.Sound
-            Parselmouth sound object.
-        time_step : float
-            Time step in seconds (default=0.01).
-        fmin : float
-            Minimum pitch frequency in Hz.
-        silence_threshold : float
-            Threshold for silence.
-        periods_per_window : float
-            Number of periods per window.
-
-        Returns:
-        --------
-        hnr : float
-            Harmonics-to-noise ratio.
-        """
-        harmonicity: parselmouth.Harmonicity = parselmouth.praat.call(
-            sound, "To Harmonicity (cc)",
-            time_step, fmin, silence_threshold, periods_per_window
-        )
-        hnr: float = parselmouth.praat.call(harmonicity, "Get mean", 0, 0)
-        return hnr
-
-    # Helper for jitter and shimmer
-
-    @staticmethod
-    def _jitter_shimmer(
-        sound: parselmouth.Sound, fmin: float = 75.0, fmax: float = 600.0
-    ) -> Tuple[float, float]:
-        """
-        Extracts jitter and shimmer from audio file using cc method.
-
-        Parameters:
-        -----------
-        sound : parselmouth.Sound
-            Parselmouth sound object.
-        fmin : float
-            Minimum pitch frequency in Hz.
-        fmax : float
-            Maximum pitch frequency in Hz.
-
-        Returns:
-        --------
-        jitter : float
-            Jitter.
-        shimmer : float
-            Shimmer.
-        """
-        point_process: parselmouth.Data = parselmouth.praat.call(
-            sound, "To PointProcess (periodic, cc)",
-            fmin, fmax
-        )
-
-        jitter: float = parselmouth.praat.call(
-            point_process, "Get jitter (local)", 0, 0, 0.0001, 0.02, 1.3
-        )
-        shimmer: float = parselmouth.praat.call(
-            [sound,
-                point_process], "Get shimmer (local)", 0, 0, 0.0001, 0.02, 1.3, 1.6
-        )
-        return jitter, shimmer
-
-    # Helper for rms_energy
-
-    @staticmethod
-    def _rms_energy(sound: parselmouth.Sound) -> float:
-        """
-        Extracts rms energy from audio file.
-
-        Parameters:
-        -----------
-        sound : parselmouth.Sound
-            Parselmouth sound object.
-
-        Returns:
-        --------
-        rms_energy : float
-            Root mean square energy.
-        """
-        amplitude_square: np.ndarray = sound.values ** 2
-        mean_amplitude_square: float = np.mean(amplitude_square)
-        rms_energy: float = np.sqrt(mean_amplitude_square)
-        return rms_energy
-
-    # Create function to extract common acoustic features
-
-    @staticmethod
     def acoustic_features(
         self,
         sound: parselmouth.Sound,
@@ -500,8 +516,7 @@ class FeatureExtractor:
             sound=sound, maximum_formant=maximum_formant)
 
         # Vocal tract estimates
-        vt_estimates = self._vocal_tract_estimates(
-            sound=sound, formants=formants_features)
+        vt_estimates = self._vocal_tract_estimates(formants=formants_features)
 
         # HNR
         hnr: float = self._hnr(sound=sound, fmin=f0min)
@@ -523,7 +538,6 @@ class FeatureExtractor:
 
     # Low level features
 
-    @staticmethod
     def low_lvl_features(
         self,
         y: np.ndarray,
@@ -621,11 +635,9 @@ class FeatureExtractor:
         return features_vec.T
 
     # LPCCs
-
-    @staticmethod
-    def lpcc(
+    def lpc_features(
         self,
-        y: np.ndarry,
+        y: np.ndarray,
         sr: int,
         n_lpcc: int = 13,
         win_length: float = 25,
@@ -658,7 +670,7 @@ class FeatureExtractor:
 
         Returns:
         --------
-        lpccs : np.ndarray
+        features_vec : np.ndarray
             LPCCs for each frame in the audio file. Shape is (n_frames, n_lpccs).
             If summarise = True, shape is (n_lpccs*2,).
         """
@@ -698,14 +710,14 @@ class FeatureExtractor:
         lp_spectrum: np.ndarray = np.abs(np.fft.rfft(lpcs, axis=1))
 
         # Compute LPCCs
-        lpccs: np.ndarray = np.fft.irfft(
+        features_vec: np.ndarray = np.fft.irfft(
             np.log(lp_spectrum), axis=1)[:, :n_lpcc]
 
         # Summarise by utterance
         if summarise:
-            lpccs: np.ndarray = self._summarise_features(lpccs.T)
+            features_vec: np.ndarray = self._summarise_features(features_vec.T)
 
-        return lpccs
+        return features_vec
 
     # Process sound files
 
@@ -717,11 +729,11 @@ class FeatureExtractor:
         --------
         features : np.ndarray
             Extracted features. Shape is (n_files, n_features) when summarise=True for 
-            mel_features, low_lvl_features, lpcc. If summarise=False, shape is (n_files x n_frames, n_features).
+            mel_features, low_lvl_features, lpc_features. If summarise=False, shape is (n_files x n_frames, n_features).
         """
         features: list = []  # list of features of all files
         for audio_file in self.audio_files:
-            if any(method in self.feature_methods for method in ['mel_features', 'lpcc', 'low_lvl_features']):
+            if any(method in self.feature_methods for method in ['mel_features', 'lpc_features', 'low_lvl_features']):
                 y, sr = librosa.load(audio_file, sr=None)
 
             if 'acoustic_features' in self.feature_methods:
@@ -740,12 +752,26 @@ class FeatureExtractor:
                     low_lvl_features_vec = self.low_lvl_features(
                         y=y, sr=sr, **args)
                     file_feature.append(low_lvl_features_vec)
-                elif method == 'lpcc':
-                    lpcc_vec = self.lpcc(y=y, sr=sr, **args)
-                    file_feature.append(lpcc_vec)
+                elif method == 'lpc_features':
+                    lpc_features_vec = self.lpc_features(y=y, sr=sr, **args)
+                    file_feature.append(lpc_features_vec)
 
             # Concatenate features of current file and append to features
             file_feature = np.concatenate(file_feature, axis=0)
             features.append(file_feature)
 
         return np.array(features)
+
+
+# debugging
+if __name__ == '__main__':
+    audio_dir = 'tests/data/'
+    feature_methods = {
+        'mel_features': {'deltas': True, 'summarise': True, 'n_mfcc': 13},
+        'acoustic_features': {'f0min': 75.0, 'f0max': 600.0},
+        'low_lvl_features': {'use_mean_contrasts': True, 'summarise': True},
+        'lpc_features': {'summarise': True}
+    }
+    fe = FeatureExtractor(audio_dir, feature_methods)
+    features = fe.process_files()
+    print(features.shape)
