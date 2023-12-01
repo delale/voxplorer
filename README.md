@@ -1,4 +1,4 @@
-# SpEmViz
+# VoxRimor
 ![Embedding Projector](<screenshots/Screenshot 2023-09-12 at 17.48.26.png>)
 ![Embedding Projector: selected point](<screenshots/Screenshot 2023-09-12 at 17.48.54.png>)
 | Table of Contents               |
@@ -12,20 +12,20 @@
 ## Installation
 Clone the git repository by running in your preferred terminal emulator:
 ```sh
-git clone https://github.com/delale/SpEmViz.git
+git clone https://github.com/delale/VoxRimor.git
 ```
 
 Install [miniconda](https://docs.conda.io/projects/miniconda/en/latest/) or [Anaconda](https://www.anaconda.com/download).  
-Open your preferred terminal emulator in the `SpEmViz` directory and install the spmviz conda environment:  
+Open your preferred terminal emulator in the `VoxRimor` directory and install the `voxrimor` conda environment:  
   
 **WinOS or Linux**
 ```sh
-conda env create -f spemviz_env_Win_and_Linux.yml
+conda env create -f voxrimor_env_Win_and_Linux.yml
 ```
 
 **MacOS**
 ```sh
-conda env create -f spemviz_env_OSX.yml
+conda env create -f voxrimor_env_OSX.yml
 ```
 Sometimes an error during the installation of tensorflow and tensorflow-metal may occur:
 ```sh
@@ -36,28 +36,28 @@ ERROR: No matching distribution found for tensorflow-metal
 ```
 In this case run the following commands:
 ```sh
-conda activate spemviz
+conda activate voxrimor
 SYSTEM_VERSION_COMPAT=0 pip install tensorflow tensorflow-metal
 ```
   
 **Verify installation by running:**
 ```sh
-conda activate spemviz
+conda activate voxrimor
 which python3
 ```
 It should return something along the lines of   
-`/Users/your_user/miniconda3/envs/spemviz/bin/python3`  
+`/Users/your_user/miniconda3/envs/voxrimor/bin/python3`  
 or  
-`/Users/your_user/anaconda3/envs/spemviz/bin/python3`
+`/Users/your_user/anaconda3/envs/voxrimor/bin/python3`
 
 ## Usage
-To run the program open a terminal in the SpEmViz directory and run 
+To run the program open a terminal in the VoxRimor directory and run 
 ```sh
-conda activate spemviz
+conda activate voxrimor
 ```
 To run the embedding projector on a dataset run:
 ```sh
-python3 spemviz.py -f path_to_the_database -x feature variables -y metadata variables --log_dir path_to_logs_directory
+python3 voxrimor.py -f path_to_the_database -x feature variables -y metadata variables --log_dir path_to_logs_directory
 ```
 You will see a CLI output similar to this:
 ```
@@ -88,35 +88,35 @@ When you want to exit you can simply close the embedding projector page and in y
 
 ## Example Usage
 Given a database with 10 columns of which the last 6 are features (columns 5 through 9) and the first four are metadata variables: filename, speaker, sex, utterance.  
-The database is located in my SpEmViz working directory at `data/db.csv`
+The database is located in my VoxRimor working directory at `data/db.csv`
 To run the embedding projector with just the features by running:
 ```sh
-python3 spemviz.py -f ./data/db.csv -x "(5, 9)" -y None
+python3 voxrimor.py -f ./data/db.csv -x "(5, 9)" -y None
 ```
 To run the embedding projector with the features and only `sex` and `speaker` by running:
 ```sh
-python3 spemviz.py -f ./data/db.csv -x "(5, 9)" -y sex speaker
+python3 voxrimor.py -f ./data/db.csv -x "(5, 9)" -y sex speaker
 ```
 or
 ```sh
-python3 spemviz.py -f ./data/db.csv -x "(5, 9)" -y 2 1
+python3 voxrimor.py -f ./data/db.csv -x "(5, 9)" -y 2 1
 ```
 To run the embedding projector with the features and all of the metadata variables by running:
 ```sh
-python3 spemviz.py -f ./data/db.csv -x "(5, 9)" -y infer
+python3 voxrimor.py -f ./data/db.csv -x "(5, 9)" -y infer
 ```
 To run the embedding projector with only `F0`, `F1`, and `HNR` as features and all of the metadata variables by running:
 ```sh
-python3 spemviz.py -f ./data/db.csv -x F0 F1 HNR -y "(0 3)"
+python3 voxrimor.py -f ./data/db.csv -x F0 F1 HNR -y "(0 3)"
 ```
 
 ## Tips & Tricks
 If you want to use the embedding projector to select data and would like to be able to filter the original data based on 
 this selection you can modifiy the original table by adding a "phantom" variable called `selection` containing only 0s for example (can be any value indicating the unselected data).  
-You can then include this variable in your metatdata when running `spemviz.py`.  
+You can then include this variable in your metatdata when running `voxrimor.py`.  
 Going back to the db.csv example we could create such a variable in Python like so:
 ```sh
-conda activate spemviz
+conda activate voxrimor
 python3
 ```
 ```py
@@ -128,7 +128,7 @@ exit()
 ```
 Open embedding projector:
 ```sh
-python3 spemviz.py -f ./data/db_sel.csv -x "(5, 9)" -y filename sex speaker selection
+python3 voxrimor.py -f ./data/db_sel.csv -x "(5, 9)" -y filename sex speaker selection
 ```
 In the embedding projector you can then use the several different tools (rectangle selection, selecting by label for e.g. sex, clicking on point and selecting n nearest neighbours) and then on the left tab, navigate to `Edit by` and change the metadata to edit to `selection`. Then change the value to your preferred selection value (e.g. 1). You can then download the edited metadata by clicking on download. You can then select only those rows with the edited `selection` value and use the key variable (e.g. `filename`) to filter the original data. This works well only when including a key ID variable that is unique for each row in the original dataframe. Theoretically, you can also use the indices of the selected rows to filter the dataframe as they should remain the same (*caveat: if the original contains NAs, the indices will be relative only to the NA-filtered data*).
 

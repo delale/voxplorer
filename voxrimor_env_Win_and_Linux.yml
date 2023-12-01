@@ -1,17 +1,16 @@
-name: spemviz
+name: voxrimor
 channels:
   - defaults
   - conda-forge
-  - pytorch
 dependencies:
   - python=3.10.*
   - numpy
   - pandas
   - umap-learn
-  - librosa
   - pip
   - pip:
+    - torch
+    - torchaudio
     - speechbrain
-    - praat-parselmouth
     - tensorflow
-    - tensorflow-metal
+
