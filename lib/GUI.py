@@ -1,12 +1,12 @@
 """
-Graphical User Interface for SpEmViz built using tkinter.
+Graphical User Interface for VoxRimor built using tkinter.
 """
 
 import tkinter as tk
 
 class gui():
     """
-    Tkinter GUI for SpEmViz.
+    Tkinter GUI for VoxRimor.
 
     Parameters:
     -----------

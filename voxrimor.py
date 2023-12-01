@@ -14,7 +14,7 @@ from lib import data_loader, embedding_projector
 
 def main():
     parser = argparse.ArgumentParser(
-        description="""SpEmViz: Speaker embedding projector using TensorBoard.
+        description="""VoxRimor: Speaker embedding projector using TensorBoard.
         The program takes as inputs the path to the data, the metadata variable names 
         or indices if any, the features variable names or indices or None/'all' if 
         all variables are features.
