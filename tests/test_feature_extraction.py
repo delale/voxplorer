@@ -120,6 +120,27 @@ class TestFeatureExtraction(unittest.TestCase):
         self.assertIsInstance(result, np.ndarray)
         self.assertEqual(result.shape, (12,))
 
+    def test_lpcc(self):
+        # Test with default params
+        result = fe.lpcc(self.audio_file)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertEqual(result.shape[1], 13)
+
+        # Test with different n_lpcc
+        result = fe.lpcc(self.audio_file, n_lpcc=20)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertEqual(result.shape[1], 20)
+
+        # Test with summarise=True
+        result = fe.lpcc(self.audio_file, summarise=True)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertEqual(result.shape, (13*2,))
+
+        # Test with summarise=True and different n_lpcc
+        result = fe.lpcc(self.audio_file, summarise=True, n_lpcc=20)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertEqual(result.shape, (20*2,))
+
 
 if __name__ == '__main__':
     unittest.main()

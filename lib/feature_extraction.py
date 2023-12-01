@@ -1,10 +1,9 @@
-# TODO: create mfccs extraction with possibility to have:
-#   - deltas (both or only first)
-#   - summarised by utterance
 from typing import Tuple
+import warnings
 import numpy as np
 import librosa
 import parselmouth
+from scipy import signal
 
 
 # helper of mel_features() to extract delta and delta-delta coefficients
@@ -115,6 +114,12 @@ def mel_features(
     # compute frame length and overlap in samples
     n_fft: int = int(win_length * sr / 1000)
     hop_length: int = int(overlap * sr / 1000)
+
+    # warn if n_mfcc > n_mels
+    if n_mfcc > n_mels:
+        warnings.warn(
+            f"n_mfcc ({n_mfcc}) is greater than n_mels ({n_mels}). Setting n_mels = n_mfcc.")
+        n_mels = n_mfcc
 
     # extract mfccs
     features_vec: np.ndarray = librosa.feature.mfcc(
@@ -552,4 +557,82 @@ def low_lvl_features(
     return features_vec.T
 
 
-# TODO: create function to extract LPCCs and LPC residual
+def lpcc(
+    audio_file: str, n_lpcc: int = 13, win_length: float = 25,
+    overlap: float = 10, premphasis: float = 0.95, order=16, summarise: bool = False
+) -> np.ndarray:
+    """
+    Extracts LPCCs from audio file by taking the inverse Fourier Transform of the 
+    log LP spectrum computed from LPCs (using Burg method).
+
+    Parameters:
+    -----------
+    audio_file : str
+        Path to audio file.
+    n_lpcc : int
+        Number of LPCCs to return.
+    win_length : float
+        Window length in milliseconds.
+    overlap : float
+        Overlap length in milliseconds.
+    premphasis : float
+        Coefficient for pre-emphasis filter.
+    order : int
+        Order of the LPC.
+    summarise : bool
+        Whether to summarise features by utterance. If True, returns mean and standard
+        deviation of features for each utterance.
+
+    Returns:
+    --------
+    lpccs : np.ndarray
+        LPCCs for each frame in the audio file. Shape is (n_frames, n_lpccs).
+    """
+    # Load the audio signal
+    y: np.ndarray
+    sr: int
+    y, sr = librosa.load(audio_file, sr=None)  # load audio file
+
+    # pre-emphasis filter
+    y: np.ndarray = librosa.effects.preemphasis(y, coef=premphasis)
+
+    # warn if n_lpcc > order
+    if n_lpcc > order:
+        warnings.warn(
+            f"n_lpcc ({n_lpcc}) is greater than order ({order}). Setting order = n_lpcc.")
+        order = n_lpcc
+
+    # compute frame length and overlap in samples
+    n_fft: int = int(win_length * sr / 1000)
+    hop_length: int = int(overlap * sr / 1000)
+
+    # Frame signal
+    frames: np.ndarray = librosa.util.frame(
+        y, frame_length=n_fft, hop_length=hop_length
+    )
+
+    # Windowing
+    windowed_frames: np.ndarray = frames * \
+        signal.windows.hamming(n_fft)[:, None]
+
+    # Warn if num samples per frame < order
+    if windowed_frames.shape[0] < order:
+        warnings.warn(
+            f"Number of samples per frame ({windowed_frames.shape[0]}) is less than order ({order}). Setting order = num samples per frame - 1.")
+        order = windowed_frames.shape[0] - 1
+
+    # Compute LPCs
+    lpcs: np.ndarray = np.array([librosa.lpc(y=frame, order=order)
+                                for frame in windowed_frames.T])
+
+    # Compute LP spectrum
+    lp_spectrum: np.ndarray = np.abs(np.fft.rfft(lpcs, axis=1))
+
+    # Compute LPCCs
+    lpccs: np.ndarray = np.fft.irfft(np.log(lp_spectrum), axis=1)[:, :n_lpcc]
+
+    # Summarise by utterance
+    if summarise:
+        lpccs: np.ndarray = _summarise_features(lpccs.T)
+
+    return lpccs
