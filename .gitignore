@@ -6,3 +6,6 @@ logs/
 .vscode
 .DS_Store
 __pycache__
+
+# pretrained classifier hyperparameters
+.pretrained_classifier
