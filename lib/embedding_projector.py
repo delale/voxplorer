@@ -111,7 +111,13 @@ class TensorBoardTool:
             '--reuse_port', 'True'
         ])
         url = tb.launch()
-        return tb, url
+        return tb, url+'/#projector'
+
+    def _shutdown(self):
+        """Shuts down the TensorBoard server.
+        """
+        subprocess.Popen(['pkill', '-f', 'tensorboard'])
+        logging.info('TensorBoard server shut down.')
 
 
 def test():

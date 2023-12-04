@@ -3,9 +3,9 @@ Graphical User Interface for VoxRimor built using tkinter.
 """
 
 import os
-import re
 import tkinter as tk
 from tkinter import messagebox, filedialog, simpledialog, ttk
+import threading
 import webbrowser
 import data_loader
 import embedding_projector
@@ -38,7 +38,7 @@ class VisualizerWindow(tk.Toplevel):
         self.selection_check.pack()
 
         self.project_button = tk.Button(
-            self, text='Project!', command=self.embedding_projector)
+            self, text='Project!', command=self.start_projector)
         self.project_button.pack()
 
     def select_file(self):
@@ -55,18 +55,29 @@ class VisualizerWindow(tk.Toplevel):
         for col in self.table.columns:
             self.columns_listbox.insert(tk.END, col)
 
-    def embedding_projector(self):
-        ptd = os.path.join(os.getcwd(), self.file_label['text'])
-        log_dir = os.path.join(os.getcwd(), 'logs')
-        if not os.path.exists(log_dir):
-            os.mkdir(log_dir)
-
+    def start_projector(self):
         # Get metavars
         selected_indices = self.columns_listbox.curselection()
         selected_columns = [self.columns_listbox.get(
             i) for i in selected_indices]
 
         add_selection_column = bool(self.selection_var.get())
+
+        # Start projector in separate thread
+        self.projector_thread = threading.Thread(
+            target=self.embedding_projector, args=(selected_columns, add_selection_column))
+        self.projector_thread.start()
+
+        # Add button to stop analysis
+        self.stop_button = tk.Button(self, text='Stop projector',
+                                     command=self.stop_projector)
+        self.stop_button.pack()
+
+    def embedding_projector(self, selected_columns, add_selection_column):
+        ptd = os.path.join(os.getcwd(), self.file_label['text'])
+        log_dir = os.path.join(os.getcwd(), 'logs')
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
 
         # Run the split_data function
         X, Y, metavars = data_loader.split_data(
@@ -75,12 +86,22 @@ class VisualizerWindow(tk.Toplevel):
         )
 
         # Run embedding projector
-        tbTool = embedding_projector.TensorBoardTool(
+        self.tbTool = embedding_projector.TensorBoardTool(
             log_dir=log_dir, embedding_vecs=X, metadata=Y, metadata_var=metavars
         )
-        board, url = tbTool.run()
-        webbrowser.open(url+"/#projector", new=2, autoraise=True)
-        board.main()    # run TensorBoard
+
+        self.board, url = self.tbTool.run()
+        webbrowser.open(url)
+
+    def stop_projector(self):
+        # if self.projector_thread:
+        #     self.projector_thread.ter
+        #     self.board = None
+        #     self.stop_button.destroy()
+        if self.board:
+            self.tbTool._shutdown()
+            self.board = None
+            self.stop_button.destroy()
 
 
 class Application(tk.Frame):
