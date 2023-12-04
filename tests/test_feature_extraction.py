@@ -9,7 +9,7 @@ from ..lib.feature_extraction import FeatureExtractor
 class TestFeatureExtractor(unittest.TestCase):
     def setUp(self) -> None:
         audio_dir = 'tests/data/'
-        audio_file = 'tests/data/test.wav'
+        audio_file = 'tests/data/01_test_001.wav'
         feature_methods = {
             'mel_features': {'deltas': True, 'summarise': True, 'n_mfcc': 13},
             'acoustic_features': {'f0min': 75.0, 'f0max': 600.0},
