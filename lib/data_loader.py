@@ -8,26 +8,19 @@ import numpy as np
 import pandas as pd
 
 
-def load_data(features: list, metavars: list, path_to_data: str):
-    """Splits the data into features and metadata.
+def load_data(path_to_data: str):
+    """
+    Loads a table given a path. Infers that correct separator character.
 
-    Args:
-        features: Features variable names or indices list. 
-            If None, all are taken except those listed in metavars.
-            If 'all', all are taken. 
-        metavars: Metadata variable names or indices list. 
-            If None, metadata variables are excluded. 
-            If 'infer', metadata variables are inferred as the ones not selected as features.
-        path_to_data: Path to the data table.
+    Parameters:
+    -----------
+    path_to_data: str
+        Path to the data table.
 
     Returns:
-        X [np.ndarray]: Features array.
-        metadata [np.ndarray]: Metadata values (if metavars is not None).
-        metavars [list]: Metadata variable names (if metavars is not None)
-
-    Caveats:
-        If both metavars and features are None, all of the data is taken as features.
-        If features is None and
+    --------
+    pd.DataFrame
+        Data table.
     """
     # Find the appropriate separator character
     with open(path_to_data, 'r') as f:
@@ -44,6 +37,41 @@ def load_data(features: list, metavars: list, path_to_data: str):
             sep = input("What is the separator character for the data?")
 
     df = pd.read_csv(path_to_data, sep=sep)
+
+    return df
+
+
+def split_data(df: pd.DataFrame, features: list, metavars: list):
+    """
+    Splits the data into features and metadata.
+
+    Parameters:
+    -----------
+    df: pd.DataFrame
+        Data table.
+    features: list
+        List of features variable names or indices list.
+        If None, all are taken except those listed in metavars.
+        If 'all', all are taken.
+    metavars: list
+        List of metadata variable names.
+        If None, metadata variables are excluded.
+        If 'infer', metadata variables are inferred as the ones not selected as features.
+
+    Returns:
+    --------
+    X : np.ndarray
+        Features array.
+    metadata : np.ndarray
+        Metadata values (if metavars is not None).
+    metavars : list
+        Metadata variable names (if metavars is not None)
+
+    Caveats:
+    --------
+    If both metavars and features are None, all of the data is taken as features.
+    If features is None and
+    """
 
     # Remove an NA values
     if df.isna().any(axis=None):
