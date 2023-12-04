@@ -85,11 +85,11 @@ def spembed(audio_dir: str) -> np.ndarray:
     wavs, wav_lens = _load_audio_files(audio_files)
 
     # init classifier
-    if not os.path.isdir('.pretrained_embedding'):
-        os.mkdir('.pretrained_embedding')
+    if not os.path.isdir('.pretrained_classifier'):
+        os.mkdir('.pretrained_classifier')
     classifier: EncoderClassifier = EncoderClassifier.from_hparams(
         source='speechbrain/spkrec-ecapa-voxceleb',
-        savedir='.pretrained_embedding'
+        savedir='.pretrained_classifier'
     )
 
     # embed
