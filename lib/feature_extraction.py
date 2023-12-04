@@ -54,7 +54,11 @@ class FeatureExtractor:
         self.feature_methods: dict = feature_methods
         if os.path.isdir(audio_dir):
             self.audio_files: list = [os.path.join(
-                self.audio_dir, f) for f in os.listdir(audio_dir) if f.endswith('.wav')]
+                self.audio_dir, f) for f in os.listdir(audio_dir) if f.endswith('.wav')
+            ]
+            if len(self.audio_files) == 0:
+                raise ValueError('No .wav files found in audio_dir')
+
         elif self.audio_dir.endswith('.wav'):
             self.audio_files: list = [self.audio_dir]
         else:
