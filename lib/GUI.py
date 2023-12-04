@@ -2,9 +2,13 @@
 Graphical User Interface for VoxRimor built using tkinter.
 """
 
+import os
+import re
 import tkinter as tk
 from tkinter import messagebox, filedialog, simpledialog, ttk
+import webbrowser
 import data_loader
+import embedding_projector
 
 
 class VisualizerWindow(tk.Toplevel):
@@ -33,6 +37,10 @@ class VisualizerWindow(tk.Toplevel):
             self, text="Add 'selection' column", variable=self.selection_var)
         self.selection_check.pack()
 
+        self.project_button = tk.Button(
+            self, text='Project!', command=self.embedding_projector)
+        self.project_button.pack()
+
     def select_file(self):
         file_path = filedialog.askopenfilename(
             initialdir='.', title='Select a table')
@@ -46,6 +54,33 @@ class VisualizerWindow(tk.Toplevel):
         self.columns_listbox.delete(0, tk.END)  # clear the listbox
         for col in self.table.columns:
             self.columns_listbox.insert(tk.END, col)
+
+    def embedding_projector(self):
+        ptd = os.path.join(os.getcwd(), self.file_label['text'])
+        log_dir = os.path.join(os.getcwd(), 'logs')
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
+
+        # Get metavars
+        selected_indices = self.columns_listbox.curselection()
+        selected_columns = [self.columns_listbox.get(
+            i) for i in selected_indices]
+
+        add_selection_column = bool(self.selection_var.get())
+
+        # Run the split_data function
+        X, Y, metavars = data_loader.split_data(
+            df=self.table, features=None, metavars=selected_columns,
+            add_selection_column=add_selection_column
+        )
+
+        # Run embedding projector
+        tbTool = embedding_projector.TensorBoardTool(
+            log_dir=log_dir, embedding_vecs=X, metadata=Y, metadata_var=metavars
+        )
+        board, url = tbTool.run()
+        webbrowser.open(url+"/#projector", new=2, autoraise=True)
+        board.main()    # run TensorBoard
 
 
 class Application(tk.Frame):

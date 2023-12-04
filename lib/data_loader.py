@@ -41,7 +41,7 @@ def load_data(path_to_data: str):
     return df
 
 
-def split_data(df: pd.DataFrame, features: list, metavars: list):
+def split_data(df: pd.DataFrame, features: list, metavars: list, add_selection_column: bool = False):
     """
     Splits the data into features and metadata.
 
@@ -57,6 +57,9 @@ def split_data(df: pd.DataFrame, features: list, metavars: list):
         List of metadata variable names.
         If None, metadata variables are excluded.
         If 'infer', metadata variables are inferred as the ones not selected as features.
+    add_selection_column: bool
+        Whether to add a selection column to the metadata variables.
+
 
     Returns:
     --------
@@ -77,6 +80,10 @@ def split_data(df: pd.DataFrame, features: list, metavars: list):
     if df.isna().any(axis=None):
         print("Warning: Data contains NAs\nremoving...")
         df = df.dropna()
+
+    if add_selection_column:
+        df['selection'] = np.repeat(0, df.shape[0])
+        metavars.append('selection')
 
     # Feature selection and metadata variable selection
     # Do all checks on features and metavars to understand what needs to go where

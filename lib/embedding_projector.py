@@ -103,6 +103,7 @@ class TensorBoardTool:
         projector.visualize_embeddings(self.log_dir, self.config)
 
     def run(self):
+        """Runs the embedding projector. Returns the TensorBoard object and the URL."""
         self._projector_setup()
         tb = program.TensorBoard()
         tb.configure(argv=[
@@ -110,8 +111,7 @@ class TensorBoardTool:
             '--reuse_port', 'True'
         ])
         url = tb.launch()
-        print(f"TensorBoard Embedding Projector at: {url}/#projector")
-        tb.main()
+        return tb, url
 
 
 def test():
