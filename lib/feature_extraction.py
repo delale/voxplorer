@@ -57,12 +57,12 @@ class FeatureExtractor:
                 self.audio_dir, f) for f in os.listdir(audio_dir) if f.endswith('.wav')
             ]
             if len(self.audio_files) == 0:
-                raise ValueError('No .wav files found in audio_dir')
+                raise FileNotFoundError('No .wav files found in audio_dir')
 
         elif self.audio_dir.endswith('.wav'):
             self.audio_files: list = [self.audio_dir]
         else:
-            raise ValueError(
+            raise FileNotFoundError(
                 "audio_dir must be a directory containing .wav files or a .wav file.")
 
     # helper to summarise features by utterance
