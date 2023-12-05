@@ -784,10 +784,9 @@ class FeatureExtractor:
         # append to dictionary a dictionary of metadata
         metadata_dict['filename'] = [basename]
         if metavars:
-            for j, var in enumerate(metavars):
-                if var == '-':
-                    continue
-                metadata_dict[var] = [metadata[j]]
+            for i, var in enumerate(metavars):
+                if var != '-':
+                    metadata_dict[var] = [metadata[i]]
 
         return metadata_dict
 
