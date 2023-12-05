@@ -853,12 +853,8 @@ class FeatureExtractor:
                 metadata_dict[key].extend(value*file_feature.shape[0])
 
         # Split metadata into labels and values
-        metadata_labels: list = [None] * len(metadata_dict)
-        metadata_values: list = [None] * len(metadata_dict)
-        for i, (key, value) in enumerate(metadata_dict.items()):
-            metadata_labels[i] = key
-            metadata_values[i] = value
-        metadata_values: np.ndarray = np.array(metadata_values).T
+        metadata_labels: list = list(metadata_dict.keys())
+        metadata_values: np.ndarray = np.array(list(metadata_dict.values())).T
 
         return np.concatenate(features, axis=0), metadata_values, metadata_labels
 

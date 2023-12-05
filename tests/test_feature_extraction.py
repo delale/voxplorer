@@ -113,6 +113,7 @@ class TestFeatureExtractor(unittest.TestCase):
                          (len(self.fe.audio_files), 13*6+18+12+13*2))
         self.assertEqual(result_metavalues.shape,
                          (len(self.fe.audio_files), 3))
+        self.assertEqual(len(result_metalabel), 3)
 
 
 if __name__ == '__main__':
