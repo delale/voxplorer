@@ -39,14 +39,14 @@ def filter_selection(output_file: str) -> None:
     df.to_csv(output_filename, index=False)
 
 
-def extract_metadata(files_list: list, metavars: list, separator: str = '_', ) -> dict:
+def extract_metadata(filename: str, metavars: list, separator: str = '_', ) -> dict:
     """
-    Extracts metadata variables from the data files.
+    Extracts metadata variables from the filename.
 
     Parameters:
     -----------
-    files_list: list
-        List of files to extract metadata from.
+    filename: str
+        Filename.
     metavars: list
         List of metadata variable names. If '-' then it is skipped.
     separator: str
@@ -57,33 +57,19 @@ def extract_metadata(files_list: list, metavars: list, separator: str = '_', ) -
     dict
         Dictionary of metadata variables.
     """
-    if type(files_list) is not list:
-        raise TypeError("files_list must be a list.")
-    if len(files_list) == 0:
-        raise ValueError("files_list must not be empty.")
-
     # Create empty dictionary
     metadata_dict = {}
 
-    # Loop over files
-    for i, file in enumerate(files_list):
-        # Extract metadata from filename
-        filename = os.path.basename(file)
-        metadata = os.path.splitext(filename)[0]
-        metadata = metadata.split(separator)
+    # Extract metadata from filename
+    basename = os.path.basename(filename)
+    metadata = os.path.splitext(basename)[0]
+    metadata = metadata.split(separator)
 
-        # append to dictionary a dictionary of metadata
-        if i == 0:
-            metadata_dict['filename'] = [filename]
-            for j, var in enumerate(metavars):
-                if var == '-':
-                    continue
-                metadata_dict[var] = [metadata[j]]
-        else:
-            metadata_dict['filename'].append(filename)
-            for j, var in enumerate(metavars):
-                if var == '-':
-                    continue
-                metadata_dict[var].append(metadata[j])
+    # append to dictionary a dictionary of metadata
+    metadata_dict['filename'] = [filename]
+    for j, var in enumerate(metavars):
+        if var == '-':
+            continue
+        metadata_dict[var] = [metadata[j]]
 
     return metadata_dict
