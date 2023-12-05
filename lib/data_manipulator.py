@@ -66,7 +66,7 @@ def extract_metadata(filename: str, metavars: list, separator: str = '_', ) -> d
     metadata = metadata.split(separator)
 
     # append to dictionary a dictionary of metadata
-    metadata_dict['filename'] = [filename]
+    metadata_dict['filename'] = [basename]
     for j, var in enumerate(metavars):
         if var == '-':
             continue
