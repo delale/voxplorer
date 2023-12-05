@@ -16,7 +16,11 @@ class TestFeatureExtractor(unittest.TestCase):
             'low_lvl_features': {'use_mean_contrasts': True, 'summarise': True},
             'lpc_features': {'summarise': True}
         }
-        self.fe = FeatureExtractor(audio_dir, feature_methods)
+        metadata_vars = {
+            'metavars': ['speaker', '-', 'sentence'],
+            'separator': '_'
+        }
+        self.fe = FeatureExtractor(audio_dir, feature_methods, metadata_vars)
         self.y, self.sr = librosa.load(audio_file, sr=None)
         self.sound = parselmouth.Sound(audio_file)
 
@@ -97,14 +101,18 @@ class TestFeatureExtractor(unittest.TestCase):
         self.assertEqual(result.shape, (13*2,))
 
     def test_process_files(self):
-        result = self.fe.process_files()
+        result_features, result_metavalues, result_metalabel = self.fe.process_files()
 
-        # Result is a np.ndarray?
-        self.assertIsInstance(result, np.ndarray)
+        # Type checks
+        self.assertIsInstance(result_features, np.ndarray)
+        self.assertIsInstance(result_metavalues, np.ndarray)
+        self.assertIsInstance(result_metalabel, list)
 
         # Result has shape (n_files, n_features)?
-        self.assertEqual(result.shape[0], len(self.fe.audio_files))
-        self.assertEqual(result.shape[1], 13*6+18+12+13*2)
+        self.assertEqual(result_features.shape,
+                         (len(self.fe.audio_files), 13*6+18+12+13*2))
+        self.assertEqual(result_metavalues.shape,
+                         (len(self.fe.audio_files), 3))
 
 
 if __name__ == '__main__':

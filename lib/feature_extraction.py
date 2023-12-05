@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Tuple
 import os
 import warnings
@@ -26,6 +27,17 @@ class FeatureExtractor:
             'low_lvl_features': {'win_length': 25, 'overlap': 10},
             'lpc_features': {'n_lpcc': 13, 'win_length': 25, 'overlap': 10}
         }
+    metadata_vars : dict
+        Dictionary of metadata variables to extract from the filename. Keys are 
+        metavars: list of names of metadata variables to extract from the filename
+        (use '-' to ignore the variable). Should have the same index as variable in 
+        filename after splitting by separator;
+        separator: the separating character between metadata variables in the filename.
+        Example:
+        metadata_vars = {
+            'metavars': ['speaker', 'emotion', '-', 'selection'],
+            'separator': '_'
+        }
 
     Attributes:
     -----------
@@ -42,16 +54,31 @@ class FeatureExtractor:
             'low_lvl_features': {'win_length': 25, 'overlap': 10},
             'lpc_features': {'n_lpcc': 13, 'win_length': 25, 'overlap': 10}
         }
+    metadata_vars : dict
+        Dictionary of metadata variables to extract from the filename. Keys are 
+        metavars: list of names of metadata variables to extract from the filename
+        (use '-' to ignore the variable). Should have the same index as variable in 
+        filename after splitting by separator;
+        separator: the separating character between metadata variables in the filename.
+        Example:
+        metadata_vars = {
+            'metavars': ['speaker', 'emotion', '-', 'selection'],
+            'separator': '_'
+        }
     audio_files : list
         List of audio files in audio_dir.
     features : np.ndarray
         Extracted features. Shape is (n_files, n_features) when summarise=True for 
         mel_features, low_lvl_features, lpc_features. If summarise=False, shape is (n_files x n_frames, n_features).
+    metadata_dict : defaultdict
+        Dictionary of metadata variables. Keys are the names of the metadata variables,
+        values are the values of the metadata variables for each audio file.
     """
 
-    def __init__(self, audio_dir: str, feature_methods: dict):
+    def __init__(self, audio_dir: str, feature_methods: dict, metadata_vars: dict = {'metavars': None, 'separator': None}):
         self.audio_dir: str = audio_dir
         self.feature_methods: dict = feature_methods
+        self.metadata_vars: dict = metadata_vars
         if os.path.isdir(audio_dir):
             self.audio_files: list = [os.path.join(
                 self.audio_dir, f) for f in os.listdir(audio_dir) if f.endswith('.wav')
@@ -723,8 +750,48 @@ class FeatureExtractor:
 
         return features_vec
 
-    # Process sound files
+    # Metatdata extraction
 
+    def extract_metadata(self, filename: str, metavars: list = None, separator: str = '_', ) -> dict:
+        """
+        Extracts metadata variables from the filename.
+
+        Parameters:
+        -----------
+        filename: str
+            Filename.
+        metavars: list
+            List of metadata variable names. Metadata variable should have the same index as
+            variable in filename after splitting by separator. If '-' then variable is skipped.
+            If None, returns only filename.
+        separator: str
+            Separator character between metadata variables.
+
+        Returns:
+        --------
+        dict
+            Dictionary of metadata variables. If metavars is None, returns only filename.
+        """
+        # Create empty dictionary
+        metadata_dict = {}
+
+        # Extract metadata from filename
+        basename = os.path.basename(filename)
+        if metavars:
+            metadata = os.path.splitext(basename)[0]
+            metadata = metadata.split(separator)
+
+        # append to dictionary a dictionary of metadata
+        metadata_dict['filename'] = [filename]
+        if metavars:
+            for j, var in enumerate(metavars):
+                if var == '-':
+                    continue
+                metadata_dict[var] = [metadata[j]]
+
+        return metadata_dict
+
+    # Process sound files
     def process_files(self):
         """
         Processes each file with the specified feature extraction methods.
@@ -734,37 +801,67 @@ class FeatureExtractor:
         features : np.ndarray
             Extracted features. Shape is (n_files, n_features) when summarise=True for 
             mel_features, low_lvl_features, lpc_features. If summarise=False, shape is (n_files x n_frames, n_features).
+        metadata_values : np.ndarray
+            Extracted metadata. Shape is (n_files x n_frames, n_metavars).
+        metadata_labels : list
+            List of metadata variable names.
         """
         features: list = []  # list of features of all files
+        metadata_dict: defaultdict = defaultdict(
+            list)  # dictionary of metadata
         for audio_file in self.audio_files:
             if any(method in self.feature_methods for method in ['mel_features', 'lpc_features', 'low_lvl_features']):
+                y: np.ndarray
+                sr: int
                 y, sr = librosa.load(audio_file, sr=None)
 
             if 'acoustic_features' in self.feature_methods:
-                sound = parselmouth.Sound(audio_file)
+                sound: parselmouth.Sound = parselmouth.Sound(audio_file)
+
+            # Extract metadata
+            metadata_dict_file: dict = self.extract_metadata(
+                filename=audio_file, **self.metadata_vars
+            )
 
             file_feature: list = []  # list of features of current file
             for method, args in self.feature_methods.items():
                 if method == 'mel_features':
-                    mel_features_vec = self.mel_features(y=y, sr=sr, **args)
+                    mel_features_vec: np.ndarray = self.mel_features(
+                        y=y, sr=sr, **args)
                     file_feature.append(mel_features_vec)
                 elif method == 'acoustic_features':
-                    ac_features_vec = self.acoustic_features(
+                    ac_features_vec: np.ndarray = self.acoustic_features(
                         sound=sound, **args)
                     file_feature.append(ac_features_vec)
                 elif method == 'low_lvl_features':
-                    low_lvl_features_vec = self.low_lvl_features(
+                    low_lvl_features_vec: np.ndarray = self.low_lvl_features(
                         y=y, sr=sr, **args)
                     file_feature.append(low_lvl_features_vec)
                 elif method == 'lpc_features':
-                    lpc_features_vec = self.lpc_features(y=y, sr=sr, **args)
+                    lpc_features_vec: np.ndarray = self.lpc_features(
+                        y=y, sr=sr, **args)
                     file_feature.append(lpc_features_vec)
 
             # Concatenate features of current file and append to features
-            file_feature = np.concatenate(file_feature, axis=0)
+            file_feature: np.ndarray = np.concatenate(file_feature, axis=0)
+            # Reshape if format is incorrect
+            if len(file_feature.shape) == 1:
+                file_feature = file_feature.reshape(1, -1)
             features.append(file_feature)
 
-        return np.array(features)
+            # Concatenate metadata of current file to the samed 0th dim of features and append
+            for key, value in metadata_dict_file.items():
+                metadata_dict[key].extend(value*file_feature.shape[0])
+
+        # Split metadata into labels and values
+        metadata_labels: list = [None] * len(metadata_dict)
+        metadata_values: list = [None] * len(metadata_dict)
+        for i, (key, value) in enumerate(metadata_dict.items()):
+            metadata_labels[i] = key
+            metadata_values[i] = value
+        metadata_values: np.ndarray = np.array(metadata_values).T
+
+        return np.concatenate(features, axis=0), metadata_values, metadata_labels
 
 
 # debugging
@@ -776,6 +873,12 @@ if __name__ == '__main__':
         'low_lvl_features': {'use_mean_contrasts': True, 'summarise': True},
         'lpc_features': {'summarise': True}
     }
-    fe = FeatureExtractor(audio_dir, feature_methods)
-    features = fe.process_files()
+    metadata_vars = {
+        'metavars': ['speaker', '-', 'sentence'],
+        'separator': '_'
+    }
+    fe = FeatureExtractor(audio_dir, feature_methods, metadata_vars)
+    features, metavalues, metalabels = fe.process_files()
     print(features.shape)
+    print(metavalues)
+    print(metalabels)
