@@ -409,12 +409,12 @@ class FeatureExtractor:
         sr: int,
         n_mfcc: int = 13,
         n_mels: int = 40,
-        win_length: float = 25,
-        overlap: float = 10,
-        fmin: int = 150,
-        fmax: int = 4000,
+        win_length: float = 25.0,
+        overlap: float = 10.0,
+        fmin: float = 150.0,
+        fmax: float = 4000.0,
         premphasis: float = 0.95,
-        lifter: int = 22,
+        lifter: float = 22,
         deltas: bool = False,
         summarise: bool = False
     ) -> np.ndarray:
@@ -671,10 +671,10 @@ class FeatureExtractor:
         y: np.ndarray,
         sr: int,
         n_lpcc: int = 13,
-        win_length: float = 25,
-        overlap: float = 10,
+        win_length: float = 25.0,
+        overlap: float = 10.0,
         premphasis: float = 0.95,
-        order=16,
+        order: int = 16,
         summarise: bool = False
     ) -> np.ndarray:
         """
