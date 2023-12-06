@@ -104,6 +104,80 @@ class VisualizerWindow(tk.Toplevel):
             self.stop_button.destroy()
 
 
+class FeatureExtractorWindow(tk.Toplevel):
+    def __init__(self, master=None):
+        super().__init__(master)
+        self.title('Feature extraction mode')
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.mode_var = tk.StringVar(value="speaker embeddings")
+        self.speaker_embeddings_radio = tk.Radiobutton(
+            self, text="Speaker embeddings", variable=self.mode_var,
+            value="speaker embeddings", command=self.update_methods_listbox)
+        self.speaker_embeddings_radio.pack()
+
+        self.feature_extraction_radio = tk.Radiobutton(
+            self, text="Feature extraction", variable=self.mode_var,
+            value="feature extraction", command=self.update_methods_listbox
+        )
+        self.feature_extraction_radio.pack()
+
+        self.methods_label = tk.Label(
+            self, text='Select feature extraction methods:')
+        self.methods_listbox = tk.Listbox(self, selectmode='multiple')
+        for method in [
+            "Mel Features",
+            "Acoustic Features (Pitch desc., Formants, VT estimates, HNR, jitter, shimmer, RMS energy)",
+            "Low Level Features (spectral centroid, bandwidth, contrasts, flatness, rolloff, zero-crossing rate)",
+            "Liner Predictive Cepsstral Coefficients"
+        ]:
+            self.methods_listbox.insert(tk.END, method)
+
+        self.continue_button = tk.Button(self, text='Continue',
+                                         command=self.open_methods_window)
+        self.continue_button.pack()
+
+    def update_methods_listbox(self):
+        if self.mode_var.get() == "feature extraction":
+            self.methods_label.pack(padx=10, pady=10)
+            self.methods_listbox.pack(
+                fill=tk.BOTH, expand=True, padx=10, pady=10)
+        else:
+            self.methods_label.pack_forget()
+            self.methods_listbox.pack_forget()
+
+    def open_methods_window(self):
+        if self.mode_var.get() == "speaker embeddings":
+            SpeakerEmbeddingsWindow(self)
+        elif self.mode_var.get() == "feature extraction":
+            selected_indices = self.methods_listbox.curselection()
+            selected_methods = [self.methods_listbox.get(
+                i) for i in selected_indices]
+            for method in selected_methods:
+                MethodsWindow(self, method)
+
+
+class SpeakerEmbeddingsWindow(tk.Toplevel):
+    def __init__(self, master=None):
+        super().__init__(master)
+        self.title('Speaker embeddings')
+        self.create_widgets()
+
+    def create_widgets(self):
+        pass
+
+
+class MethodsWindow(tk.Toplevel):
+    def __init__(self, master=None, method: str = None):
+        super().__init__(master)
+        self.title('Feature extraction')
+        self.create_widgets(method=method)
+
+    def create_widgets(self, method: str):
+        pass
+
+
 class Application(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
@@ -131,8 +205,7 @@ class Application(tk.Frame):
         self.visualizer_window = VisualizerWindow(self)
 
     def feature_extractor_mode(self):
-        messagebox.showinfo(
-            "Info", "Feature extraction and visualization mode selected")
+        self.feature_extractor_window = FeatureExtractorWindow(self)
 
 
 root = tk.Tk()
