@@ -2,6 +2,7 @@
 Graphical User Interface for VoxRimor built using tkinter.
 """
 
+from collections import defaultdict
 import os
 import tkinter as tk
 from tkinter import messagebox, filedialog, simpledialog, ttk
@@ -130,7 +131,7 @@ class FeatureExtractorWindow(tk.Toplevel):
             "Mel Features",
             "Acoustic Features (Pitch desc., Formants, VT estimates, HNR, jitter, shimmer, RMS energy)",
             "Low Level Features (spectral centroid, bandwidth, contrasts, flatness, rolloff, zero-crossing rate)",
-            "Liner Predictive Cepsstral Coefficients"
+            "Liner Predictive Cepstral Coefficients"
         ]:
             self.methods_listbox.insert(tk.END, method)
 
@@ -155,27 +156,105 @@ class FeatureExtractorWindow(tk.Toplevel):
             selected_methods = [self.methods_listbox.get(
                 i) for i in selected_indices]
             for method in selected_methods:
-                MethodsWindow(self, method)
+                MethodsWindow(self, method, self.store_parameter_values)
 
+    def store_parameter_values(self, method, parameter_values):
+        print("Stored parameter values for " + method +
+              ":", parameter_values)  # debugging
 
-class SpeakerEmbeddingsWindow(tk.Toplevel):
-    def __init__(self, master=None):
-        super().__init__(master)
-        self.title('Speaker embeddings')
-        self.create_widgets()
-
-    def create_widgets(self):
-        pass
+    # TODO: add metadata specification, directory selection before everything else,
+    #       parameter specs dict, tensorboard components (incl. project button)
 
 
 class MethodsWindow(tk.Toplevel):
-    def __init__(self, master=None, method: str = None):
+    def __init__(self, master=None, method: str = None, callback=None):
         super().__init__(master)
         self.title('Feature extraction')
-        self.create_widgets(method=method)
+        self.method = method
+        self.callback = callback
+        self.parameters = {}
+        self.create_widgets()
 
-    def create_widgets(self, method: str):
-        pass
+    def create_widgets(self):
+        self.method_label = tk.Label(
+            self, text="Set parameters for " + self.method)
+        self.method_label.pack()
+
+        # Define parameters for each method
+        parameters = {
+            "Mel Features": {
+                "n_mfcc": 13,
+                "n_mels": 40,
+                "win_length": 25.0,
+                "overlap": 10.0,
+                "fmin": 150.0,
+                "fmax": 4000.0,
+                "preemphasis": 0.95,
+                "lifter": 22.0,
+                "deltas": True,
+                "summarise": True
+            },
+            "Acoustic Features (Pitch desc., Formants, VT estimates, HNR, jitter, shimmer, RMS energy)": {
+                "f0min": 75.0, "f0max": 600.0
+            },
+            "Low Level Features (spectral centroid, bandwidth, contrasts, flatness, rolloff, zero-crossing rate)": {
+                "win_length": 25.0,
+                "overlap": 10.0,
+                "preemphasis": 0.95,
+                "use_mean_contrasts": True,
+                "summarise": True
+            },
+            "Liner Predictive Cepstral Coefficients": {
+                "n_lpcc": 13,
+                "win_length": 25.0,
+                "overlap": 10.0,
+                "preemphasis": 0.95,
+                "order": 16,
+                "summarise": True
+            }
+        }
+
+        for parameter, default_value in parameters[self.method].items():
+            frame = tk.Frame(self)
+            frame.pack(fill=tk.X, expand=True, padx=10, pady=10)
+
+            label = tk.Label(frame, text=parameter, width=20, anchor='w')
+            label.pack(side=tk.LEFT)
+
+            # Checkbutton for boolean parameters
+            if isinstance(default_value, bool):
+                var = tk.BooleanVar(value=default_value)
+                widget = tk.Checkbutton(frame, variable=var)
+            elif isinstance(default_value, float):
+                var = tk.DoubleVar(value=default_value)
+                widget = tk.Entry(frame, textvariable=var)
+            else:
+                var = tk.IntVar(value=default_value)
+                widget = tk.Entry(frame, textvariable=var)
+            widget.pack(side=tk.RIGHT, expand=True, fill=tk.X)
+
+            # Store variable in the parameter dictionary and default value for type checking
+            self.parameters[parameter] = (var, default_value)
+
+        self.continue_button = tk.Button(
+            self, text='Continue', command=self.save_parameters)
+        self.continue_button.pack(pady=10)
+
+    def save_parameters(self):
+        # Save parameters to a dictionary
+        parameters_dict = {}
+        for parameter, (var, default_value) in self.parameters.items():
+            try:
+                parameters_dict[parameter] = var.get()
+            except tk.TclError:
+                messagebox.showerror(
+                    "Error", "Invalid value for " + parameter + ".")
+                var.set(default_value)
+                return
+        if self.callback is not None:
+            self.callback(self.method, parameters_dict)
+
+        self.destroy()
 
 
 class Application(tk.Frame):
