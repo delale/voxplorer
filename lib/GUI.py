@@ -10,6 +10,7 @@ import threading
 from typing import Callable
 import webbrowser
 import numpy as np
+import pandas as pd
 import data_loader
 import embedding_projector
 from feature_extraction import FeatureExtractor
@@ -125,6 +126,20 @@ class FeatureExtractorWindow(tk.Toplevel):
             file_frame, text='Browse directory', command=self.select_dir)
         self.dir_button.grid(row=1, column=2, sticky='e')
 
+        self.out_dir_label = tk.Label(
+            file_frame, text='Output directory & Filename:')
+        self.out_dir_label.grid(row=2, column=0, columnspan=3)
+
+        self.out_dir_entry = tk.Entry(file_frame)
+        self.out_dir_entry.grid(row=3, column=0, sticky='w')
+
+        self.out_file.entry = tk.Entry(file_frame)
+        self.out_file_entry.grid(row=3, column=1, sticky='e')
+
+        self.out_dir_button = tk.Button(
+            file_frame, text='Browse', command=self.select_out_dir)
+        self.out_dir_button.grid(row=3, column=2, sticky='e')
+
         outer_frame = tk.Frame(self)
         outer_frame.pack()
 
@@ -178,6 +193,13 @@ class FeatureExtractorWindow(tk.Toplevel):
             self.file_entry.delete(0, tk.END)
             self.file_entry.insert(0, dir_path)
 
+    def select_out_dir(self):
+        dir_path = filedialog.askdirectory(
+            initialdir='.', title='Select a directory')
+        if dir_path:
+            self.out_dir_entry.delete(0, tk.END)
+            self.out_dir_entry.insert(0, dir_path)
+
     def open_methods_window(self):
         if not self.file_entry.get():
             messagebox.showerror(
@@ -225,14 +247,17 @@ class FeatureExtractorWindow(tk.Toplevel):
             self.metadata_vars = {'metavars': None, 'separator': None}
             MetadataWindow(self, filename, self.store_metadata_specifications)
 
-    def store_metadata_specifications(self, metavars: list, separator: str):
+    def store_metadata_specifications(self, metavars: list, separator: str, add_selection_column: bool):
         self.metadata_vars['metavars'] = metavars
         self.metadata_vars['separator'] = separator
+        self.metadata_vars['add_selection_column'] = add_selection_column
 
         # Add a start analysis button
         self.start_analysis_button = tk.Button(
             self, text='Start analysis', command=self.feature_extraction_pipeline)
         self.start_analysis_button.pack()
+
+        self.deiconify()
 
     def feature_extraction_pipeline(self):
         if self.mode_var.get() == "feature extraction":
@@ -247,7 +272,18 @@ class FeatureExtractorWindow(tk.Toplevel):
             )
             print("Speaker embeddings pipeline")
 
-        # X, Y, metavars = featureExtractor.process_files()
+        X, Y, metavars, feature_labels = featureExtractor.process_files()  # TODO: test me!
+        if self.out_dir_entry.get():
+            out_dir = self.out_dir_entry.get()
+            if not os.path.exists(out_dir):
+                os.mkdir(out_dir)
+            if self.out_file_entry.get():
+                out_file = os.path.splitext(self.out_file_entry.get())[0]
+            else:
+                out_file = 'features'
+
+            # TODO: add feature labels returned by featureExtractor
+            df = pd.DataFrame(X, columns=feature_labels)
 
     # TODO: add metadata specification,
     #       parameter specs dict, tensorboard components (incl. project button)
@@ -347,6 +383,9 @@ class MethodsWindow(tk.Toplevel):
                           self.callback, self.index)
         self.destroy()  # close the current window
 
+    def destroy(self) -> None:
+        self.withdraw()
+
 
 class MetadataWindow(tk.Toplevel):
     def __init__(self, master=None, filename: str = None, callback: Callable = None):
@@ -374,6 +413,12 @@ class MetadataWindow(tk.Toplevel):
 
         outer_frame = tk.Frame(self)
         outer_frame.pack()
+
+        self.selection_var = tk.IntVar()
+        self.selection_check = tk.Checkbutton(
+            outer_frame, text="Add 'selection' column", variable=self.selection_var)
+        self.selection_check.pack()
+
         self.continue_button = tk.Button(
             outer_frame, text='Continue', command=self.save_metadata)
         self.continue_button.pack()
@@ -403,9 +448,14 @@ class MetadataWindow(tk.Toplevel):
         for widget in self.filename_parts_frame.winfo_children():
             if isinstance(widget, tk.Entry):
                 metadata_spec.append(widget.get())
+        add_selection_column = bool(self.selection_var.get())
         if self.callback is not None:
-            self.callback(metadata_spec, self.current_separator)
+            self.callback(metadata_spec, self.current_separator,
+                          add_selection_column)
         self.destroy()
+
+    def destroy(self) -> None:
+        self.withdraw()
 
 
 class ProjectorWindow(tk.Toplevel):
