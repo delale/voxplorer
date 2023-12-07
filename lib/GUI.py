@@ -20,34 +20,44 @@ class VisualizerWindow(tk.Toplevel):
         self.create_widgets()
 
     def create_widgets(self):
-        self.file_label = tk.Label(self, text='File path:')
-        self.file_label.pack()
+        file_frame = tk.Frame(self)
+        file_frame.pack()
+
+        self.file_label = tk.Label(file_frame, text='Table path:')
+        self.file_label.grid(row=0, column=0, columnspan=2)
+
+        self.file_entry = tk.Entry(file_frame)
+        self.file_entry.grid(row=1, column=0, sticky='w')
 
         self.file_button = tk.Button(
-            self, text='Select a table', command=self.select_file)
-        self.file_button.pack()
+            file_frame, text='Browse', command=self.select_file)
+        self.file_button.grid(row=1, column=1, sticky='e')
+
+        outer_frame = tk.Frame(self)
+        outer_frame.pack()
 
         self.columns_label = tk.Label(
-            self, text='Select columns for metadata features:')
+            outer_frame, text='Select columns for metadata features:')
         self.columns_label.pack()
 
-        self.columns_listbox = tk.Listbox(self, selectmode='multiple')
+        self.columns_listbox = tk.Listbox(outer_frame, selectmode='multiple')
         self.columns_listbox.pack()
 
         self.selection_var = tk.IntVar()
         self.selection_check = tk.Checkbutton(
-            self, text="Add 'selection' column", variable=self.selection_var)
+            outer_frame, text="Add 'selection' column", variable=self.selection_var)
         self.selection_check.pack()
 
         self.project_button = tk.Button(
-            self, text='Project!', command=self.start_projector)
+            outer_frame, text='Project!', command=self.start_projector)
         self.project_button.pack()
 
     def select_file(self):
         file_path = filedialog.askopenfilename(
-            initialdir='.', title='Select a table')
+            initialdir='.', title='Select a directory of WAV files or a WAV file')
         if file_path:
-            self.file_label['text'] = file_path
+            self.file_entry.delete(0, tk.END)
+            self.file_entry.insert(0, file_path)
             self.load_columns(file_path)
 
     def load_columns(self, file_path):
@@ -113,20 +123,41 @@ class FeatureExtractorWindow(tk.Toplevel):
         self.create_widgets()
 
     def create_widgets(self):
+        file_frame = tk.Frame(self)
+        file_frame.pack()
+
+        self.file_label = tk.Label(
+            file_frame, text='Directory or WAV file path:')
+        self.file_label.grid(row=0, column=0, columnspan=3)
+
+        self.file_entry = tk.Entry(file_frame)
+        self.file_entry.grid(row=1, column=0, sticky='w')
+
+        self.file_button = tk.Button(
+            file_frame, text='Browse file', command=self.select_file)
+        self.file_button.grid(row=1, column=1, sticky='e')
+
+        self.dir_button = tk.Button(
+            file_frame, text='Browse directory', command=self.select_dir)
+        self.dir_button.grid(row=1, column=2, sticky='e')
+
+        outer_frame = tk.Frame(self)
+        outer_frame.pack()
+
         self.mode_var = tk.StringVar(value="speaker embeddings")
         self.speaker_embeddings_radio = tk.Radiobutton(
-            self, text="Speaker embeddings", variable=self.mode_var,
+            outer_frame, text="Speaker embeddings", variable=self.mode_var,
             value="speaker embeddings", command=self.update_methods_listbox)
         self.speaker_embeddings_radio.pack()
 
         self.feature_extraction_radio = tk.Radiobutton(
-            self, text="Feature extraction", variable=self.mode_var,
+            outer_frame, text="Feature extraction", variable=self.mode_var,
             value="feature extraction", command=self.update_methods_listbox
         )
         self.feature_extraction_radio.pack()
 
         self.methods_label = tk.Label(
-            self, text='Select feature extraction methods:')
+            outer_frame, text='Select feature extraction methods:')
         self.methods_listbox = tk.Listbox(self, selectmode='multiple')
         for method in [
             "Mel Features",
@@ -136,7 +167,7 @@ class FeatureExtractorWindow(tk.Toplevel):
         ]:
             self.methods_listbox.insert(tk.END, method)
 
-        self.continue_button = tk.Button(self, text='Continue',
+        self.continue_button = tk.Button(outer_frame, text='Continue',
                                          command=self.open_methods_window)
         self.continue_button.pack()
 
@@ -148,6 +179,22 @@ class FeatureExtractorWindow(tk.Toplevel):
         else:
             self.methods_label.pack_forget()
             self.methods_listbox.pack_forget()
+
+    def select_file(self):
+        file_path = filedialog.askopenfilename(
+            initialdir='.', title='Select a directory of WAV files or a WAV file')
+        if file_path:
+            self.file_entry.delete(0, tk.END)
+            self.file_entry.insert(0, file_path)
+            print(self.file_entry.get())  # debugging
+
+    def select_dir(self):
+        dir_path = filedialog.askdirectory(
+            initialdir='.', title='Select a directory of WAV files or a WAV file')
+        if dir_path:
+            self.file_entry.delete(0, tk.END)
+            self.file_entry.insert(0, dir_path)
+            print(self.file_entry.get())    # debugging
 
     def open_methods_window(self):
         if self.mode_var.get() == "feature extraction":
@@ -165,7 +212,6 @@ class FeatureExtractorWindow(tk.Toplevel):
 
     def store_parameter_values(self, method, parameter_values):
         self.feature_methods[self.method_translator[method]] = parameter_values
-        print(self.feature_methods)  # debugging
 
     # TODO: add metadata specification, directory selection before everything else,
     #       parameter specs dict, tensorboard components (incl. project button)
