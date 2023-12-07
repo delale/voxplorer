@@ -7,6 +7,7 @@ import os
 import tkinter as tk
 from tkinter import messagebox, filedialog, simpledialog, ttk
 import threading
+from typing import Callable
 import webbrowser
 import data_loader
 import embedding_projector
@@ -160,8 +161,7 @@ class FeatureExtractorWindow(tk.Toplevel):
             selected_indices = self.methods_listbox.curselection()
             selected_methods = [self.methods_listbox.get(
                 i) for i in selected_indices]
-            for method in selected_methods:
-                MethodsWindow(self, method, self.store_parameter_values)
+            MethodsWindow(self, selected_methods, self.store_parameter_values)
 
     def store_parameter_values(self, method, parameter_values):
         self.feature_methods[self.method_translator[method]] = parameter_values
@@ -172,11 +172,13 @@ class FeatureExtractorWindow(tk.Toplevel):
 
 
 class MethodsWindow(tk.Toplevel):
-    def __init__(self, master=None, method: str = None, callback=None):
+    def __init__(self, master=None, methods: list = None, callback: Callable = None, index: int = 0):
         super().__init__(master)
         self.title('Feature extraction')
-        self.method = method
+        self.methods = methods
         self.callback = callback
+        self.index = index
+        self.method = methods[index]
         self.parameters = {}
         self.create_widgets()
 
@@ -258,8 +260,12 @@ class MethodsWindow(tk.Toplevel):
                 return
         if self.callback is not None:
             self.callback(self.method, parameters_dict)
-
-        self.destroy()
+        self.index += 1
+        if self.index < len(self.methods):
+            # Open the next MethodsWindow
+            MethodsWindow(self.master, self.methods,
+                          self.callback, self.index)
+        self.destroy()  # close the current window
 
 
 class Application(tk.Frame):
