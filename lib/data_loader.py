@@ -36,7 +36,11 @@ def load_data(path_to_data: str):
         else:
             sep = input("What is the separator character for the data?")
 
-    df = pd.read_csv(path_to_data, sep=sep)
+    try:
+        df = pd.read_csv(path_to_data, sep=sep)
+    except:
+        UnicodeDecodeError(
+            "Cannot read the file")
 
     return df
 
