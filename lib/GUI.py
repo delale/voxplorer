@@ -149,9 +149,14 @@ class FeatureExtractorWindow(tk.Toplevel):
             self.methods_listbox.pack_forget()
 
     def open_methods_window(self):
-        if self.mode_var.get() == "speaker embeddings":
-            SpeakerEmbeddingsWindow(self)
-        elif self.mode_var.get() == "feature extraction":
+        if self.mode_var.get() == "feature extraction":
+            self.feature_methods = {}
+            self.method_translator = {
+                "Mel Features": "mel_features",
+                "Acoustic Features (Pitch desc., Formants, VT estimates, HNR, jitter, shimmer, RMS energy)": "acoustic_features",
+                "Low Level Features (spectral centroid, bandwidth, contrasts, flatness, rolloff, zero-crossing rate)": "low_lvl_features",
+                "Liner Predictive Cepstral Coefficients": "lpc_features"
+            }
             selected_indices = self.methods_listbox.curselection()
             selected_methods = [self.methods_listbox.get(
                 i) for i in selected_indices]
@@ -159,8 +164,8 @@ class FeatureExtractorWindow(tk.Toplevel):
                 MethodsWindow(self, method, self.store_parameter_values)
 
     def store_parameter_values(self, method, parameter_values):
-        print("Stored parameter values for " + method +
-              ":", parameter_values)  # debugging
+        self.feature_methods[self.method_translator[method]] = parameter_values
+        print(self.feature_methods)  # debugging
 
     # TODO: add metadata specification, directory selection before everything else,
     #       parameter specs dict, tensorboard components (incl. project button)
