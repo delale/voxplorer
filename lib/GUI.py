@@ -12,6 +12,11 @@ import webbrowser
 import numpy as np
 import data_loader
 import embedding_projector
+from feature_extraction import FeatureExtractor
+from speaker_embeddings import SpeakerEmbedder
+
+
+# TODO: test with excel files
 
 
 class VisualizerWindow(tk.Toplevel):
@@ -62,13 +67,23 @@ class VisualizerWindow(tk.Toplevel):
             self.load_columns(file_path)
 
     def load_columns(self, file_path):
-        self.table = data_loader.load_data(file_path)
+        try:
+            self.table = data_loader.load_data(file_path)
+        except UnicodeDecodeError:
+            messagebox.showerror(
+                "Error", "Cannot read the file. Please check the encoding.")
+            return
 
         self.columns_listbox.delete(0, tk.END)  # clear the listbox
         for col in self.table.columns:
             self.columns_listbox.insert(tk.END, col)
 
     def open_projector(self):
+        if not self.file_entry.get():
+            messagebox.showerror(
+                "Error", "Please select a data table.")
+            return
+
         # Get metavars
         selected_indices = self.columns_listbox.curselection()
         selected_columns = [self.columns_listbox.get(
@@ -164,6 +179,11 @@ class FeatureExtractorWindow(tk.Toplevel):
             self.file_entry.insert(0, dir_path)
 
     def open_methods_window(self):
+        if not self.file_entry.get():
+            messagebox.showerror(
+                "Error", "Please select a data table.")
+            return
+
         if self.mode_var.get() == "feature extraction":
             self.feature_methods = {}
             self.method_translator = {
@@ -176,6 +196,18 @@ class FeatureExtractorWindow(tk.Toplevel):
             selected_methods = [self.methods_listbox.get(
                 i) for i in selected_indices]
             MethodsWindow(self, selected_methods, self.store_parameter_values)
+
+        else:
+            self.filename = self.file_entry.get()
+            if os.path.isdir(self.filename):
+                for f in os.listdir(self.filename):
+                    if f.endswith('.wav'):
+                        filename = os.path.splitext(os.path.basename(f))[0]
+                        break
+            else:
+                filename = os.path.splitext(os.path.basename(self.filename))[0]
+            self.metadata_vars = {'metavars': None, 'separator': None}
+            MetadataWindow(self, filename, self.store_metadata_specifications)
 
     def store_parameter_values(self, method, parameter_values):
         self.feature_methods[self.method_translator[method]] = parameter_values
@@ -190,12 +222,32 @@ class FeatureExtractorWindow(tk.Toplevel):
                         break
             else:
                 filename = os.path.splitext(os.path.basename(self.filename))[0]
-            self.metadata_vars = {}
+            self.metadata_vars = {'metavars': None, 'separator': None}
             MetadataWindow(self, filename, self.store_metadata_specifications)
 
     def store_metadata_specifications(self, metavars: list, separator: str):
         self.metadata_vars['metavars'] = metavars
         self.metadata_vars['separator'] = separator
+
+        # Add a start analysis button
+        self.start_analysis_button = tk.Button(
+            self, text='Start analysis', command=self.feature_extraction_pipeline)
+        self.start_analysis_button.pack()
+
+    def feature_extraction_pipeline(self):
+        if self.mode_var.get() == "feature extraction":
+            featureExtractor = FeatureExtractor(
+                audio_dir=self.filename, feature_methods=self.feature_methods,
+                metadata_vars=self.metadata_vars
+            )
+            print("Feature extraction pipeline")
+        else:
+            featureExtractor = SpeakerEmbedder(
+                audio_dir=self.filename, metadata_vars=self.metadata_vars
+            )
+            print("Speaker embeddings pipeline")
+
+        # X, Y, metavars = featureExtractor.process_files()
 
     # TODO: add metadata specification,
     #       parameter specs dict, tensorboard components (incl. project button)
