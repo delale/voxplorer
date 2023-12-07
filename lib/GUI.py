@@ -9,6 +9,7 @@ from tkinter import messagebox, filedialog, simpledialog, ttk
 import threading
 from typing import Callable
 import webbrowser
+import numpy as np
 import data_loader
 import embedding_projector
 
@@ -48,9 +49,9 @@ class VisualizerWindow(tk.Toplevel):
             outer_frame, text="Add 'selection' column", variable=self.selection_var)
         self.selection_check.pack()
 
-        self.project_button = tk.Button(
-            outer_frame, text='Project!', command=self.start_projector)
-        self.project_button.pack()
+        self.continue_button = tk.Button(
+            outer_frame, text='Continue', command=self.open_projector)
+        self.continue_button.pack()
 
     def select_file(self):
         file_path = filedialog.askopenfilename(
@@ -67,53 +68,21 @@ class VisualizerWindow(tk.Toplevel):
         for col in self.table.columns:
             self.columns_listbox.insert(tk.END, col)
 
-    def start_projector(self):
+    def open_projector(self):
         # Get metavars
         selected_indices = self.columns_listbox.curselection()
         selected_columns = [self.columns_listbox.get(
             i) for i in selected_indices]
-
         add_selection_column = bool(self.selection_var.get())
 
-        # Start projector in separate thread
-        self.projector_thread = threading.Thread(
-            target=self.embedding_projector, args=(selected_columns, add_selection_column))
-        self.projector_thread.start()
-
-        # Add button to stop analysis
-        self.stop_button = tk.Button(self, text='Stop projector',
-                                     command=self.stop_projector)
-        self.stop_button.pack()
-
-    def embedding_projector(self, selected_columns, add_selection_column):
-        ptd = os.path.join(os.getcwd(), self.file_label['text'])
-        log_dir = os.path.join(os.getcwd(), 'logs')
-        if not os.path.exists(log_dir):
-            os.mkdir(log_dir)
-
-        # Run the split_data function
+        # Load data
         X, Y, metavars = data_loader.split_data(
             df=self.table, features=None, metavars=selected_columns,
             add_selection_column=add_selection_column
         )
 
-        # Run embedding projector
-        self.tbTool = embedding_projector.TensorBoardTool(
-            log_dir=log_dir, embedding_vecs=X, metadata=Y, metadata_var=metavars
-        )
-
-        self.board, url = self.tbTool.run()
-        webbrowser.open(url)
-
-    def stop_projector(self):
-        # if self.projector_thread:
-        #     self.projector_thread.ter
-        #     self.board = None
-        #     self.stop_button.destroy()
-        if self.board:
-            self.tbTool._shutdown()
-            self.board = None
-            self.stop_button.destroy()
+        # Start projector in window
+        ProjectorWindow(self, X, Y, metavars)
 
 
 class FeatureExtractorWindow(tk.Toplevel):
@@ -186,7 +155,6 @@ class FeatureExtractorWindow(tk.Toplevel):
         if file_path:
             self.file_entry.delete(0, tk.END)
             self.file_entry.insert(0, file_path)
-            print(self.file_entry.get())  # debugging
 
     def select_dir(self):
         dir_path = filedialog.askdirectory(
@@ -194,7 +162,6 @@ class FeatureExtractorWindow(tk.Toplevel):
         if dir_path:
             self.file_entry.delete(0, tk.END)
             self.file_entry.insert(0, dir_path)
-            print(self.file_entry.get())    # debugging
 
     def open_methods_window(self):
         if self.mode_var.get() == "feature extraction":
@@ -213,7 +180,24 @@ class FeatureExtractorWindow(tk.Toplevel):
     def store_parameter_values(self, method, parameter_values):
         self.feature_methods[self.method_translator[method]] = parameter_values
 
-    # TODO: add metadata specification, directory selection before everything else,
+        # Check if all methods have been processed
+        if len(self.feature_methods) == len(self.methods_listbox.curselection()):
+            self.filename = self.file_entry.get()
+            if os.path.isdir(self.filename):
+                for f in os.listdir(self.filename):
+                    if f.endswith('.wav'):
+                        filename = os.path.splitext(os.path.basename(f))[0]
+                        break
+            else:
+                filename = os.path.splitext(os.path.basename(self.filename))[0]
+            self.metadata_vars = {}
+            MetadataWindow(self, filename, self.store_metadata_specifications)
+
+    def store_metadata_specifications(self, metavars: list, separator: str):
+        self.metadata_vars['metavars'] = metavars
+        self.metadata_vars['separator'] = separator
+
+    # TODO: add metadata specification,
     #       parameter specs dict, tensorboard components (incl. project button)
 
 
@@ -310,6 +294,119 @@ class MethodsWindow(tk.Toplevel):
             MethodsWindow(self.master, self.methods,
                           self.callback, self.index)
         self.destroy()  # close the current window
+
+
+class MetadataWindow(tk.Toplevel):
+    def __init__(self, master=None, filename: str = None, callback: Callable = None):
+        super().__init__(master)
+        self.title('Metadata specification')
+        self.filename = filename
+        self.separator = tk.StringVar(value='_')
+        self.callback = callback
+        self.separator.trace('w', self.update_filename_parts)
+        self.create_widgets()
+
+    def create_widgets(self):
+        separator_frame = tk.Frame(self)
+        separator_frame.pack()
+
+        self.separator_label = tk.Label(separator_frame, text='Separator:')
+        self.separator_label.grid(row=0, column=0, sticky='w')
+
+        self.separator_value = tk.Entry(
+            separator_frame, textvariable=self.separator)
+        self.separator_value.grid(row=0, column=1, sticky='e')
+
+        self.filename_parts_frame = tk.Frame(self)
+        self.filename_parts_frame.pack()
+
+        outer_frame = tk.Frame(self)
+        outer_frame.pack()
+        self.continue_button = tk.Button(
+            outer_frame, text='Continue', command=self.save_metadata)
+        self.continue_button.pack()
+
+        # Call update_filename_parts to display the filename parts with default separator
+        self.update_filename_parts()
+
+    def update_filename_parts(self, *args):
+        for widget in self.filename_parts_frame.winfo_children():
+            widget.destroy()
+
+        if self.separator.get() != '':
+            self.current_separator = self.separator.get()
+        filename_parts = self.filename.split(self.current_separator)
+        metadata_spec_label = tk.Label(
+            self.filename_parts_frame, text='Metadata specification:')
+        metadata_spec_label.grid(row=0, column=0, columnspan=2)
+        for i, part in enumerate(filename_parts):
+            label = tk.Label(self.filename_parts_frame, text=part)
+            label.grid(row=i + 1, column=0, sticky='w')
+
+            entry = tk.Entry(self.filename_parts_frame)
+            entry.grid(row=i + 1, column=1, sticky='e')
+
+    def save_metadata(self):
+        metadata_spec = []
+        for widget in self.filename_parts_frame.winfo_children():
+            if isinstance(widget, tk.Entry):
+                metadata_spec.append(widget.get())
+        if self.callback is not None:
+            self.callback(metadata_spec, self.current_separator)
+        self.destroy()
+
+
+class ProjectorWindow(tk.Toplevel):
+    def __init__(self, master=None, X: np.ndarray = None, Y: np.ndarray = None, metavars: list = None):
+        super().__init__(master)
+        self.title('Projector')
+        self.X = X
+        self.Y = Y
+        self.metavars = metavars
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.projector_label = tk.Label(self, text='Projector')
+        self.projector_label.pack()
+
+        self.project_button = tk.Button(
+            self, text='Project!', command=self.start_projector)
+        self.project_button.pack()
+
+    def start_projector(self):
+        # Start projector in separate thread
+        self.projector_thread = threading.Thread(
+            target=self.embedding_projector, args=())
+        self.projector_thread.start()
+
+        # Add button to stop analysis
+        self.stop_button = tk.Button(self, text='Stop projector',
+                                     command=self.stop_projector)
+        self.stop_button.pack()
+
+    def embedding_projector(self):
+        log_dir = os.path.join(os.getcwd(), 'logs')
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
+
+        # Run embedding projector
+        self.tbTool = embedding_projector.TensorBoardTool(
+            log_dir=log_dir, embedding_vecs=self.X, metadata=self.Y,
+            metadata_var=self.metavars
+        )
+
+        self.board, url = self.tbTool.run()
+        webbrowser.open(url)
+
+    def stop_projector(self):
+        # if self.projector_thread:
+        #     self.projector_thread.terminate()
+        #     self.board = None
+        #     self.stop_button.destroy()
+        if self.board:
+            self.tbTool._shutdown()
+            self.board = None
+            self.stop_button.destroy()
 
 
 class Application(tk.Frame):
