@@ -26,10 +26,13 @@ class SpeakerEmbedder:
         (use '-' to ignore the variable). Should have the same index as variable in 
         filename after splitting by separator;
         separator: the separating character between metadata variables in the filename.
+        add_selection_column: whether to add a selection column to the metadata. If True,
+        adds a column 'selection' with value 0 for all files.
         Example:
         metadata_vars = {
             'metavars': ['speaker', 'emotion', '-', 'selection'],
-            'separator': '_'
+            'separator': '_',
+            'add_selection_column': False
         }
 
     Attributes:
@@ -49,7 +52,11 @@ class SpeakerEmbedder:
         }
     """
 
-    def __init__(self, audio_dir: str, metadata_vars: dict = {'metavars': None, 'separator': None}):
+    def __init__(
+            self, audio_dir: str,
+            metadata_vars: dict = {
+                'metavars': None, 'separator': None, 'add_selection_column': False}
+    ):
         self.audio_dir: str = audio_dir
         self.metadata_vars: dict = metadata_vars
         if os.path.isdir(self.audio_dir):
@@ -142,7 +149,7 @@ class SpeakerEmbedder:
 
         return embedding
 
-    def extract_metadata(self, metavars: list = None, separator: str = '_') -> dict:
+    def extract_metadata(self, metavars: list = None, separator: str = '_', add_selection_column: bool = False) -> dict:
         """
         Extracts metadata variables from the filename.
 
@@ -154,6 +161,9 @@ class SpeakerEmbedder:
             If None, returns only filename.
         separator: str
             Separator character between metadata variables.
+        add_selection_column: bool
+            Whether to add a selection column to the metadata. If True, adds a column 'selection'
+            with value 0 for all files.
 
         Returns:
         --------
@@ -171,6 +181,9 @@ class SpeakerEmbedder:
             for i, var in enumerate(metavars):
                 if var != '-':
                     metadata_dict[var].append(metadata[i])
+
+            if add_selection_column:
+                metadata_dict['selection'].append(0)
 
         return metadata_dict
 

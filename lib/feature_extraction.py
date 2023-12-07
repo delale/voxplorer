@@ -33,10 +33,13 @@ class FeatureExtractor:
         (use '-' to ignore the variable). Should have the same index as variable in 
         filename after splitting by separator;
         separator: the separating character between metadata variables in the filename.
+        add_selection_column: whether to add a selection column to the metadata. If True,
+        adds a column 'selection' with value 0 for all files.
         Example:
         metadata_vars = {
             'metavars': ['speaker', 'emotion', '-', 'selection'],
-            'separator': '_'
+            'separator': '_',
+            'add_selection_column': True
         }
 
     Attributes:
@@ -75,7 +78,11 @@ class FeatureExtractor:
         values are the values of the metadata variables for each audio file.
     """
 
-    def __init__(self, audio_dir: str, feature_methods: dict, metadata_vars: dict = {'metavars': None, 'separator': None}):
+    def __init__(
+        self, audio_dir: str, feature_methods: dict,
+        metadata_vars: dict = {'metavars': None,
+                               'separator': None, 'add_selection_column': False}
+    ):
         self.audio_dir: str = audio_dir
         self.feature_methods: dict = feature_methods
         self.metadata_vars: dict = metadata_vars
@@ -752,7 +759,7 @@ class FeatureExtractor:
 
     # Metatdata extraction
 
-    def extract_metadata(self, filename: str, metavars: list = None, separator: str = '_', ) -> dict:
+    def extract_metadata(self, filename: str, metavars: list = None, separator: str = '_', add_selection_column: bool = False) -> dict:
         """
         Extracts metadata variables from the filename.
 
@@ -766,6 +773,9 @@ class FeatureExtractor:
             If None, returns only filename.
         separator: str
             Separator character between metadata variables.
+        add_selection_column: bool
+            Whether to add a selection column to the metadata. If True, adds a column 'selection'
+            with value 0 for all files.
 
         Returns:
         --------
@@ -787,6 +797,10 @@ class FeatureExtractor:
             for i, var in enumerate(metavars):
                 if var != '-':
                     metadata_dict[var] = [metadata[i]]
+
+        # Add selection column
+        if add_selection_column:
+            metadata_dict['selection'] = [0]
 
         return metadata_dict
 
