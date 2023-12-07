@@ -147,7 +147,9 @@ class SpeakerEmbedder:
         embedding: np.ndarray = torch.reshape(embedding, shape=(
             embedding.shape[0], 192)).numpy()  # 192 embeddings
 
-        return embedding
+        feature_labels = [f'X{i}' for i in range(embedding.shape[1])]
+
+        return embedding, feature_labels
 
     def extract_metadata(self, metavars: list = None, separator: str = '_', add_selection_column: bool = False) -> dict:
         """
@@ -199,12 +201,14 @@ class SpeakerEmbedder:
             Extracted metadata. Shape is (N files, n_metavars).
         metadata_labels: list
             Metadata variable names.
+        feature_labels: list
+            Feature variable names.
         """
         # load audio files
         wavs, wav_lens = self._load_audio_files()
 
         # embed
-        features: np.ndarray = self.spembed(wavs=wavs, wav_lens=wav_lens)
+        features, feature_labels: np.ndarray = self.spembed(wavs=wavs, wav_lens=wav_lens)
 
         # extract metadata
         metadata_dict: dict = self.extract_metadata(**self.metadata_vars)
@@ -213,7 +217,7 @@ class SpeakerEmbedder:
         metadata_labels: list = list(metadata_dict.keys())
         metadata_values: np.ndarray = np.array(list(metadata_dict.values())).T
 
-        return features, metadata_values, metadata_labels
+        return features, metadata_values, metadata_labels, feature_labels
 
 
 # debugging
