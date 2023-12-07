@@ -185,7 +185,7 @@ class MethodsWindow(tk.Toplevel):
     def create_widgets(self):
         self.method_label = tk.Label(
             self, text="Set parameters for " + self.method)
-        self.method_label.pack()
+        self.method_label.grid(row=0, column=0, columnspan=2)
 
         # Define parameters for each method
         parameters = {
@@ -221,31 +221,29 @@ class MethodsWindow(tk.Toplevel):
             }
         }
 
-        for parameter, default_value in parameters[self.method].items():
-            frame = tk.Frame(self)
-            frame.pack(fill=tk.X, expand=True, padx=10, pady=10)
-
-            label = tk.Label(frame, text=parameter, width=20, anchor='w')
-            label.pack(side=tk.LEFT)
+        for i, (parameter, default_value) in enumerate(parameters[self.method].items()):
+            label = tk.Label(self, text=parameter, width=20, anchor='w')
+            label.grid(row=i+1, column=0, sticky='w')
 
             # Checkbutton for boolean parameters
             if isinstance(default_value, bool):
                 var = tk.BooleanVar(value=default_value)
-                widget = tk.Checkbutton(frame, variable=var)
+                widget = tk.Checkbutton(self, variable=var)
             elif isinstance(default_value, float):
                 var = tk.DoubleVar(value=default_value)
-                widget = tk.Entry(frame, textvariable=var)
+                widget = tk.Entry(self, textvariable=var)
             else:
                 var = tk.IntVar(value=default_value)
-                widget = tk.Entry(frame, textvariable=var)
-            widget.pack(side=tk.RIGHT, expand=True, fill=tk.X)
+                widget = tk.Entry(self, textvariable=var)
+            widget.grid(row=i+1, column=1, sticky='e')
 
             # Store variable in the parameter dictionary and default value for type checking
             self.parameters[parameter] = (var, default_value)
 
         self.continue_button = tk.Button(
             self, text='Continue', command=self.save_parameters)
-        self.continue_button.pack(pady=10)
+        self.continue_button.grid(
+            row=len(parameters[self.method])+1, column=0, columnspan=2)
 
     def save_parameters(self):
         # Save parameters to a dictionary
