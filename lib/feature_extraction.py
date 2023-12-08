@@ -896,22 +896,30 @@ class FeatureExtractor:
             file_feature: list = []  # list of features of current file
             for method, args in self.feature_methods.items():
                 if method == 'mel_features':
-                    mel_features_vec, mel_labels: np.ndarray = self.mel_features(
+                    mel_features_vec: np.ndarray
+                    mel_labels: list
+                    mel_features_vec, mel_labels = self.mel_features(
                         y=y, sr=sr, **args)
                     file_feature.append(mel_features_vec)
                     feature_labels.extend(mel_labels)
                 elif method == 'acoustic_features':
-                    ac_features_vec, ac_labels: np.ndarray = self.acoustic_features(
+                    ac_features_vec: np.ndarray
+                    ac_labels: list
+                    ac_features_vec, ac_labels = self.acoustic_features(
                         sound=sound, **args)
                     file_feature.append(ac_features_vec)
                     feature_labels.extend(ac_labels)
                 elif method == 'low_lvl_features':
-                    low_lvl_features_vec, lowlvl_labels: np.ndarray = self.low_lvl_features(
+                    low_lvl_features_vec: np.ndarray
+                    lowlvl_labels: list
+                    low_lvl_features_vec, lowlvl_labels = self.low_lvl_features(
                         y=y, sr=sr, **args)
                     file_feature.append(low_lvl_features_vec)
                     feature_labels.extend(lowlvl_labels)
                 elif method == 'lpc_features':
-                    lpc_features_vec, lpc_labels: np.ndarray = self.lpc_features(
+                    lpc_features_vec: np.ndarray
+                    lpc_labels: list
+                    lpc_features_vec, lpc_labels = self.lpc_features(
                         y=y, sr=sr, **args)
                     file_feature.append(lpc_features_vec)
                     feature_labels.extend(lpc_labels)

@@ -208,7 +208,9 @@ class SpeakerEmbedder:
         wavs, wav_lens = self._load_audio_files()
 
         # embed
-        features, feature_labels: np.ndarray = self.spembed(wavs=wavs, wav_lens=wav_lens)
+        features: np.ndarray
+        feature_labels: list
+        features, feature_labels = self.spembed(wavs=wavs, wav_lens=wav_lens)
 
         # extract metadata
         metadata_dict: dict = self.extract_metadata(**self.metadata_vars)
