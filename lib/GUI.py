@@ -9,6 +9,7 @@ from tkinter import messagebox, filedialog, simpledialog, ttk
 import threading
 from typing import Callable
 import webbrowser
+import json
 import numpy as np
 import pandas as pd
 import data_loader
@@ -69,14 +70,14 @@ class VisualizerWindow(tk.Toplevel):
 
     def load_columns(self, file_path):
         try:
-            self.table = data_loader.load_data(file_path)
+            table = data_loader.load_data(file_path)
         except UnicodeDecodeError:
             messagebox.showerror(
                 "Error", "Cannot read the file. Please check the encoding.")
             return
 
         self.columns_listbox.delete(0, tk.END)  # clear the listbox
-        for col in self.table.columns:
+        for col in table.columns:
             self.columns_listbox.insert(tk.END, col)
 
     def open_projector(self):
@@ -92,13 +93,16 @@ class VisualizerWindow(tk.Toplevel):
         add_selection_column = bool(self.selection_var.get())
 
         # Load data
+        df = data_loader.load_data(
+            self.file_entry.get(), metavars=selected_columns)
         X, Y, metavars = data_loader.split_data(
-            df=self.table, features=None, metavars=selected_columns,
+            df=df, features=None, metavars=selected_columns,
             add_selection_column=add_selection_column
         )
 
         # Start projector in window
         ProjectorWindow(self, X, Y, metavars)
+       # TEST: how does tensorboard save the selection column?
 
 
 class FeatureExtractorWindow(tk.Toplevel):
@@ -133,7 +137,7 @@ class FeatureExtractorWindow(tk.Toplevel):
         self.out_dir_entry = tk.Entry(file_frame)
         self.out_dir_entry.grid(row=3, column=0, sticky='w')
 
-        self.out_file.entry = tk.Entry(file_frame)
+        self.out_file_entry = tk.Entry(file_frame)
         self.out_file_entry.grid(row=3, column=1, sticky='e')
 
         self.out_dir_button = tk.Button(
@@ -272,7 +276,8 @@ class FeatureExtractorWindow(tk.Toplevel):
             )
             print("Speaker embeddings pipeline")
 
-        X, Y, metavars, feature_labels = featureExtractor.process_files()  # TODO: test me!
+        X, Y, metavars, feature_labels = featureExtractor.process_files()
+
         if self.out_dir_entry.get():
             out_dir = self.out_dir_entry.get()
             if not os.path.exists(out_dir):
@@ -282,11 +287,28 @@ class FeatureExtractorWindow(tk.Toplevel):
             else:
                 out_file = 'features'
 
-            # TODO: add feature labels returned by featureExtractor
-            df = pd.DataFrame(X, columns=feature_labels)
+            # Output dataframe
+            if 'selection' in metavars:
+                df_Y = pd.DataFrame(data=Y[:, :-1], columns=metavars[:-1])
+                selection_array = Y[:, -1].astype(int)
+                df_Y['selection'] = selection_array
+            else:
+                df_Y = pd.DataFrame(data=Y, columns=metavars)
 
-    # TODO: add metadata specification,
-    #       parameter specs dict, tensorboard components (incl. project button)
+            df_X = pd.DataFrame(data=X, columns=feature_labels)
+
+            df = pd.concat([df_Y, df_X], axis=1)
+
+            df.to_csv(os.path.join(out_dir, out_file + '.csv'), index=False)
+            df.dtypes.apply(lambda x: x.name).to_json(
+                os.path.join(out_dir, out_file + '_dtypes.json'))
+
+            # Debugging
+            print(X.dtype)
+            print(Y.dtype)
+            print(df.dtypes)
+        # TODO: TEST THIS
+    # TODO: add tensorboard components (incl. project button)
 
 
 class MethodsWindow(tk.Toplevel):
@@ -314,7 +336,7 @@ class MethodsWindow(tk.Toplevel):
                 "overlap": 10.0,
                 "fmin": 150.0,
                 "fmax": 4000.0,
-                "preemphasis": 0.95,
+                "premphasis": 0.95,
                 "lifter": 22.0,
                 "deltas": True,
                 "summarise": True
@@ -325,7 +347,8 @@ class MethodsWindow(tk.Toplevel):
             "Low Level Features (spectral centroid, bandwidth, contrasts, flatness, rolloff, zero-crossing rate)": {
                 "win_length": 25.0,
                 "overlap": 10.0,
-                "preemphasis": 0.95,
+                "premphasis": 0.95,
+                "n_bands_contrasts": 6,
                 "use_mean_contrasts": True,
                 "summarise": True
             },
@@ -333,7 +356,7 @@ class MethodsWindow(tk.Toplevel):
                 "n_lpcc": 13,
                 "win_length": 25.0,
                 "overlap": 10.0,
-                "preemphasis": 0.95,
+                "premphasis": 0.95,
                 "order": 16,
                 "summarise": True
             }

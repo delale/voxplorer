@@ -11,6 +11,8 @@ import os
 import json
 import pandas as pd
 
+# TODO: add the option to select metavars and option to select which metavariable to use for selction
+
 
 def filter_selection(input_file: str, output_file: str) -> None:
     """
