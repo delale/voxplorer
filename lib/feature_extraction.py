@@ -463,8 +463,6 @@ class FeatureExtractor:
             delta and delta-delta coefficients. Shape is (n_frames, n_mfccs).
             If summarise = True, contains mean and standard deviation of MFCCs for 
             each utterance and shape is (n_mfccs*2,).
-        feature_labels : list
-            List of feature labels.
         """
         # pre-emphasis filter
         y: np.ndarray = librosa.effects.preemphasis(y, coef=premphasis)
@@ -493,27 +491,15 @@ class FeatureExtractor:
             fmax=fmax
         )
 
-        # feature labels
-        tmp_feature_labels: list = [f'mfcc_{i}' for i in range(n_mfcc)]
-
         # delta features
         if deltas:
             features_vec: np.ndarray = self._delta_delta(features_vec)
-            tmp_feature_labels.extend(
-                [f'delta_{i}' for i in range(n_mfcc)] +
-                [f'delta_delta_{i}' for i in range(n_mfcc)]
-            )
 
         # summarise by utterance
         if summarise:
             features_vec: np.ndarray = self._summarise_features(features_vec)
-            # final feature labels
-            feature_labels = [f'{label}_mean' for label in tmp_feature_labels] + \
-                [f'{label}_std' for label in tmp_feature_labels]
-        else:
-            feature_labels = tmp_feature_labels
 
-        return features_vec.T, feature_labels
+        return features_vec.T
 
     # Common acoustic features
 
@@ -551,8 +537,6 @@ class FeatureExtractor:
             - jitter
             - shimmer
             - energy (rms)
-        feature_labels : list
-            List of feature labels.
         """
         # Pitch
         pitch_features: Tuple[float, ...] = self._pitch(
@@ -589,14 +573,8 @@ class FeatureExtractor:
             (pitch_features, formants_features, vt_estimates,
              (hnr, jitter, shimmer, rms_energy)), axis=0
         )
-        feature_labels: list = [
-            'pitch_mean', 'pitch_median', 'pitch_min', 'pitch_max', 'pitch_std',
-            'f1', 'f2', 'f3', 'f4',
-            'formant_dispersion', 'avg_formant', 'geometric_mean_formants', 'fitch_vtl', 'delta_f',
-            'hnr', 'jitter', 'shimmer', 'rms_energy'
-        ]
 
-        return features_vec, feature_labels
+        return features_vec
 
     # Low level features
 
@@ -607,6 +585,7 @@ class FeatureExtractor:
         win_length: float = 25,
         overlap: float = 10,
         premphasis: float = 0.95,
+        n_bands_contrasts: int = 6,
         use_mean_contrasts: bool = False,
         summarise: bool = False
     ) -> np.ndarray:
@@ -625,6 +604,8 @@ class FeatureExtractor:
             Overlap length in milliseconds.
         premphasis : float
             Coefficient for pre-emphasis filter.
+        n_bands_contrasts : int
+            Number of spectral bands for spectral contrasts.
         use_mean_contrasts : bool
             Take the mean of spectral contrasts over spectral bands. default=False.
         summarise : bool
@@ -642,8 +623,6 @@ class FeatureExtractor:
             - spectral flatness
             - spectral rolloff
             - zero crossing rate
-        feature_labels : list
-            List of feature labels.
         """
         # pre-emphasis filter
         y: np.ndarray = librosa.effects.preemphasis(y, coef=premphasis)
@@ -664,22 +643,13 @@ class FeatureExtractor:
 
         # Spectral contrast
         spectral_contrasts: np.ndarray = librosa.feature.spectral_contrast(
-            y=y, sr=sr, n_fft=n_fft, hop_length=hop_length, window='hamming'
+            y=y, sr=sr, n_fft=n_fft, hop_length=hop_length, window='hamming',
+            n_bands=n_bands_contrasts
         )
         if use_mean_contrasts:
             spectral_contrasts: np.ndarray = np.mean(
                 spectral_contrasts, axis=0, keepdims=True
             )
-            # feature labels
-            tmp_feature_labels: list = [
-                'spectral_centroid', 'spectral_bandwidth', 'spectral_contrast',
-                'spectral_flatness', 'spectral_rolloff', 'zero_crossing_rate'
-            ]
-        else:
-            # feature labels
-            tmp_feature_labels: list = ['spectral_centroid', 'spectral_bandwidth'] + \
-                [f'spectral_contrast_{i}' for i in range(spectral_contrasts.shape[0])] + \
-                ['spectral_flatness', 'spectral_rolloff', 'zero_crossing_rate']
 
         # Spectral flatness
         spectral_flatness: np.ndarray = librosa.feature.spectral_flatness(
@@ -705,13 +675,8 @@ class FeatureExtractor:
         # Summarise by utterance
         if summarise:
             features_vec: np.ndarray = self._summarise_features(features_vec)
-            # final feature labels
-            feature_labels = [f'{label}_mean' for label in tmp_feature_labels] + \
-                [f'{label}_std' for label in tmp_feature_labels]
-        else:
-            feature_labels = tmp_feature_labels
 
-        return features_vec.T, feature_labels
+        return features_vec.T
 
     # LPCCs
     def lpc_features(
@@ -752,8 +717,6 @@ class FeatureExtractor:
         features_vec : np.ndarray
             LPCCs for each frame in the audio file. Shape is (n_frames, n_lpccs).
             If summarise = True, shape is (n_lpccs*2,).
-        feature_labels : list
-            List of feature labels.
         """
         # pre-emphasis filter
         y: np.ndarray = librosa.effects.preemphasis(y, coef=premphasis)
@@ -785,11 +748,7 @@ class FeatureExtractor:
 
             if n_lpcc > order:
                 warnings.warn(
-                    f"n_lpcc ({n_lpcc}) is greater than order ({order}) but order was greater than num samples per frame. Setting n_lpcc = order.")
-                n_lpcc = order
-
-        # feature labels
-        tmp_feature_labels: list = [f'lpcc_{i}' for i in range(n_lpcc)]
+                    f"n_lpcc ({n_lpcc}) is greater than order ({order}) but order was greater than num samples per frame. Some LPCCs will be set to 0.")
 
         # Compute LPCs
         lpcs: np.ndarray = np.array([librosa.lpc(y=frame, order=order)
@@ -805,13 +764,8 @@ class FeatureExtractor:
         # Summarise by utterance
         if summarise:
             features_vec: np.ndarray = self._summarise_features(features_vec.T)
-            # final feature labels
-            feature_labels = [f'{label}_mean' for label in tmp_feature_labels] + \
-                [f'{label}_std' for label in tmp_feature_labels]
-        else:
-            feature_labels = tmp_feature_labels
 
-        return features_vec, feature_labels
+        return features_vec
 
     # Metatdata extraction
 
@@ -860,6 +814,81 @@ class FeatureExtractor:
 
         return metadata_dict
 
+    def extract_feature_labels(self, feature_methods: dict) -> list:
+        """
+        Extracts feature labels from feature_methods.
+
+        Parameters:
+        -----------
+        feature_methods : dict
+            Dictionary of feature extraction methods to use. Keys are the names of the
+            feature extraction methods, values are the arguments to pass to the methods.
+            Methods are: 'mel_features', 'acoustic_features', 'low_lvl_features', 'lpc_features'.
+
+        Returns:
+        --------
+        list
+            List of feature labels.
+        """
+        feature_labels: list = []
+        for method in feature_methods:
+            if method == "mel_features":
+                tmp_feature_labels: list = [f'mfcc_{i+1}' for i in range(
+                    feature_methods[method]['n_mfcc'])]
+                if feature_methods[method]['deltas']:
+                    tmp_feature_labels.extend(
+                        [f'delta_{i}' for i in range(feature_methods[method]['n_mfcc'])] +
+                        [f'delta_delta_{i}' for i in range(
+                            feature_methods[method]['n_mfcc'])]
+                    )
+                if feature_methods[method]['summarise']:
+                    feature_labels.extend(
+                        [f'{label}_mean' for label in tmp_feature_labels] +
+                        [f'{label}_std' for label in tmp_feature_labels]
+                    )
+                else:
+                    feature_labels.extend(tmp_feature_labels)
+
+            elif method == "acoustic_features":
+                feature_labels.extend([
+                    'pitch_mean', 'pitch_median', 'pitch_min', 'pitch_max', 'pitch_std',
+                    'f1', 'f2', 'f3', 'f4',
+                    'formant_dispersion', 'avg_formant', 'geometric_mean_formants', 'fitch_vtl', 'delta_f',
+                    'hnr', 'jitter', 'shimmer', 'rms_energy'
+                ])
+
+            elif method == "low_lvl_features":
+                if feature_methods[method]['use_mean_contrasts']:
+                    tmp_feature_labels: list = [
+                        'spectral_centroid', 'spectral_bandwidth', 'spectral_contrast',
+                        'spectral_flatness', 'spectral_rolloff', 'zero_crossing_rate'
+                    ]
+                else:
+                    tmp_feature_labels: list = ['spectral_centroid', 'spectral_bandwidth'] + \
+                        [f'spectral_contrast_{i+1}' for i in range(
+                            feature_methods[method]['n_bands_contrasts']+1)] + \
+                        ['spectral_flatness', 'spectral_rolloff', 'zero_crossing_rate']
+                if feature_methods[method]['summarise']:
+                    feature_labels.extend(
+                        [f'{label}_mean' for label in tmp_feature_labels] +
+                        [f'{label}_std' for label in tmp_feature_labels]
+                    )
+                else:
+                    feature_labels.extend(tmp_feature_labels)
+
+            elif method == "lpc_features":
+                tmp_feature_labels: list = [f'lpcc_{i}' for i in range(
+                    feature_methods[method]['n_lpcc'])]
+                if feature_methods[method]['summarise']:
+                    feature_labels.extend(
+                        [f'{label}_mean' for label in tmp_feature_labels] +
+                        [f'{label}_std' for label in tmp_feature_labels]
+                    )
+                else:
+                    feature_labels.extend(tmp_feature_labels)
+
+        return feature_labels
+
     # Process sound files
     def process_files(self):
         """
@@ -878,7 +907,9 @@ class FeatureExtractor:
         features: list = []  # list of features of all files
         metadata_dict: defaultdict = defaultdict(
             list)  # dictionary of metadata
-        feature_labels: list = []  # list of feature labels
+        feature_labels: list = self.extract_feature_labels(
+            feature_methods=self.feature_methods)  # list of feature labels
+
         for audio_file in self.audio_files:
             if any(method in self.feature_methods for method in ['mel_features', 'lpc_features', 'low_lvl_features']):
                 y: np.ndarray
@@ -897,32 +928,24 @@ class FeatureExtractor:
             for method, args in self.feature_methods.items():
                 if method == 'mel_features':
                     mel_features_vec: np.ndarray
-                    mel_labels: list
-                    mel_features_vec, mel_labels = self.mel_features(
+                    mel_features_vec = self.mel_features(
                         y=y, sr=sr, **args)
                     file_feature.append(mel_features_vec)
-                    feature_labels.extend(mel_labels)
                 elif method == 'acoustic_features':
                     ac_features_vec: np.ndarray
-                    ac_labels: list
-                    ac_features_vec, ac_labels = self.acoustic_features(
+                    ac_features_vec = self.acoustic_features(
                         sound=sound, **args)
                     file_feature.append(ac_features_vec)
-                    feature_labels.extend(ac_labels)
                 elif method == 'low_lvl_features':
                     low_lvl_features_vec: np.ndarray
-                    lowlvl_labels: list
-                    low_lvl_features_vec, lowlvl_labels = self.low_lvl_features(
+                    low_lvl_features_vec = self.low_lvl_features(
                         y=y, sr=sr, **args)
                     file_feature.append(low_lvl_features_vec)
-                    feature_labels.extend(lowlvl_labels)
                 elif method == 'lpc_features':
                     lpc_features_vec: np.ndarray
-                    lpc_labels: list
-                    lpc_features_vec, lpc_labels = self.lpc_features(
+                    lpc_features_vec = self.lpc_features(
                         y=y, sr=sr, **args)
                     file_feature.append(lpc_features_vec)
-                    feature_labels.extend(lpc_labels)
 
             # Concatenate features of current file and append to features
             file_feature: np.ndarray = np.concatenate(file_feature, axis=0)
