@@ -303,12 +303,8 @@ class FeatureExtractorWindow(tk.Toplevel):
             df.dtypes.apply(lambda x: x.name).to_json(
                 os.path.join(out_dir, out_file + '_dtypes.json'))
 
-            # Debugging
-            print(X.dtype)
-            print(Y.dtype)
-            print(df.dtypes)
-        # TODO: TEST THIS
-    # TODO: add tensorboard components (incl. project button)
+        # Start projector in window
+        ProjectorWindow(self, X, Y, metavars)
 
 
 class MethodsWindow(tk.Toplevel):
