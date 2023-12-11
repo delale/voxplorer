@@ -44,6 +44,11 @@ class VisualizerWindow(tk.Toplevel):
         outer_frame = tk.Frame(self)
         outer_frame.pack()
 
+        self.use_json_dtypes_var = tk.IntVar()
+        self.use_json_dtypes_check = tk.Checkbutton(
+            outer_frame, text="Use JSON dtypes", variable=self.use_json_dtypes_var)
+        self.use_json_dtypes_check.pack()
+
         self.columns_label = tk.Label(
             outer_frame, text='Select columns for metadata features:')
         self.columns_label.pack()
@@ -91,10 +96,14 @@ class VisualizerWindow(tk.Toplevel):
         selected_columns = [self.columns_listbox.get(
             i) for i in selected_indices]
         add_selection_column = bool(self.selection_var.get())
+        use_json_dtypes = bool(self.use_json_dtypes_var.get())
+        print(use_json_dtypes)
 
         # Load data
         df = data_manager.load_data(
-            self.file_entry.get(), metavars=selected_columns)
+            path_to_data=self.file_entry.get(),
+            metavars=selected_columns,
+            use_json_dtypes=use_json_dtypes)
         X, Y, metavars = data_manager.split_data(
             df=df, features=None, metavars=selected_columns,
             add_selection_column=add_selection_column
@@ -102,7 +111,6 @@ class VisualizerWindow(tk.Toplevel):
 
         # Start projector in window
         ProjectorWindow(self, X, Y, metavars)
-       # TEST: how does tensorboard save the selection column?
 
 
 class FeatureExtractorWindow(tk.Toplevel):

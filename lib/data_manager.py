@@ -5,11 +5,13 @@ Also contains a function to filter the data by a metavariable.
 ----------
 Alessandro De Luca - 09/2023
 """
+import os
+import json
 import numpy as np
 import pandas as pd
 
 
-def load_data(path_to_data: str, metavars: list = None):
+def load_data(path_to_data: str, metavars: list = None, use_json_dtypes: bool = False):
     """
     Loads a table given a path. Infers that correct separator character.
 
@@ -40,15 +42,22 @@ def load_data(path_to_data: str, metavars: list = None):
         else:
             sep = input("What is the separator character for the data?")
 
-    if metavars is not None:
-        dtypes = {k: pd.api.types.pandas_dtype(
-            'category') for k in metavars if k != 'selection'}
-
-        if 'selection' in metavars:
-            dtypes['selection'] = pd.api.types.pandas_dtype('int64')
-
     try:
-        if metavars is not None:
+        if use_json_dtypes:
+            filename = os.path.splitext(path_to_data)[0]
+            with open(os.path.join(filename + '_dtypes.json'), 'r') as f:
+                dtypes = json.load(f)
+            dtypes = {k: pd.api.types.pandas_dtype(
+                v) for k, v in dtypes.items()}
+            print(dtypes)
+            df = pd.read_csv(path_to_data, sep=sep, dtype=dtypes)
+
+        elif metavars is not None:
+            dtypes = {k: pd.api.types.pandas_dtype(
+                'category') for k in metavars if k != 'selection'}
+
+            if 'selection' in metavars:
+                dtypes['selection'] = pd.api.types.pandas_dtype('int64')
             df = pd.read_csv(path_to_data, sep=sep, dtype=dtypes)
         else:
             df = pd.read_csv(path_to_data, sep=sep)
@@ -148,48 +157,21 @@ def split_data(df: pd.DataFrame, features: list, metavars: list, add_selection_c
             return X, Y, metavars
 
 
-if __name__ == '__main__':
-    # Testing data_load
-    PTD = 'testing/data_load_test.csv'  # running from main dir
+def filter_selection(df: pd.DataFrame, output_file: str, metavar: str = 'selection', metavar_filter=1) -> None:
+    """
+    Filters the selection partition from the data and saves it in the same folder 
+    with the addition of '_selection' to the filename.
 
-    print(f"{'-'*10}\nTEST1: features=[0,1,2,3,4], metavars=['z']")
-    x, y, mv = load_data(
-        features=list(range(0, 5)), metavars=['z'], path_to_data=PTD
-    )
-    print(f"X.shape: {x.shape}; expected: (5,5)")
-    print(f"Y.shape: {y.shape}; expected: (5,) or (5,1)")
-    print(f"Metavars: {mv}; expected: ['z']\n\n")
+    Parameters:
+    ----------- 
 
-    print(f"{'-'*10}\nTEST2: features=[0,1,2,3,4], metavars='infer'")
-    x, y, mv = load_data(
-        features=list(range(0, 5)), metavars='infer', path_to_data=PTD
-    )
-    print(f"X.shape: {x.shape}; expected: (5,5)")
-    print(f"Y.shape: {y.shape}; expected: (5,3)")
-    print(f"Metavars: {mv}; expected: ['y0', 'y1' 'z']\n\n")
+    """
+    # Filter the selection partition
+    df = df[df[metavar] == metavar_filter]
 
-    print(f"{'-'*10}\nTEST3: features=[0,1,2,3,4], metavars=None")
-    x, y, mv = load_data(
-        features=list(range(0, 5)), metavars=None, path_to_data=PTD
-    )
-    print(f"X.shape: {x.shape}; expected: (5,5)")
-    print(f"Y is {type(y)}; expected: None")
-    print(f"Metavars is {type(mv)}; expected: None\n\n")
-
-    PTD = 'testing/data_load_test.scsv'  # testing also the infer separator part
-
-    print(f"{'-'*10}\nTEST4: features=None, metavars=['z']")
-    x, y, mv = load_data(
-        features=None, metavars=['z'], path_to_data=PTD
-    )
-    print(f"X.shape: {x.shape}; expected: (5,7)")
-    print(f"Y.shape: {y.shape}; expected: (5,) or (5,1)")
-    print(f"Metavars: {mv}; expected: ['z']\n\n")
-
-    print(f"{'-'*10}\nTEST5: features='all', metavars=['z']")
-    x, y, mv = load_data(
-        features='all', metavars=['z'], path_to_data=PTD
-    )
-    print(f"X.shape: {x.shape}; expected: (5,8)")
-    print(f"Y is {type(y)}; expected: None")
-    print(f"Metavars is {type(mv)}; expected: None\n\n")
+    # Save the selection partition
+    if not os.path.exists(os.path.dirname(output_file)):
+        os.makedirs(os.path.dirname(output_file))
+    output_filename = os.path.splitext(output_file)[0]
+    df.to_csv(output_filename + '.csv', index=False)
+    df.dtypes.apply(lambda x: x.name).to_json(output_filename + '_dtypes.json')
