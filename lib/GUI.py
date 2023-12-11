@@ -67,7 +67,7 @@ class VisualizerWindow(tk.Toplevel):
 
     def select_file(self):
         file_path = filedialog.askopenfilename(
-            initialdir='.', title='Select a directory of WAV files or a WAV file')
+            initialdir='.', title='Select a table')
         if file_path:
             self.file_entry.delete(0, tk.END)
             self.file_entry.insert(0, file_path)
@@ -97,7 +97,6 @@ class VisualizerWindow(tk.Toplevel):
             i) for i in selected_indices]
         add_selection_column = bool(self.selection_var.get())
         use_json_dtypes = bool(self.use_json_dtypes_var.get())
-        print(use_json_dtypes)
 
         # Load data
         df = data_manager.load_data(
@@ -296,12 +295,8 @@ class FeatureExtractorWindow(tk.Toplevel):
                 out_file = 'features'
 
             # Output dataframe
-            if 'selection' in metavars:
-                df_Y = pd.DataFrame(data=Y[:, :-1], columns=metavars[:-1])
-                selection_array = Y[:, -1].astype(int)
-                df_Y['selection'] = selection_array
-            else:
-                df_Y = pd.DataFrame(data=Y, columns=metavars)
+            df_Y = pd.DataFrame(data=Y, columns=metavars,
+                                dtype=pd.api.types.CategoricalDtype())
 
             df_X = pd.DataFrame(data=X, columns=feature_labels)
 
@@ -310,6 +305,16 @@ class FeatureExtractorWindow(tk.Toplevel):
             df.to_csv(os.path.join(out_dir, out_file + '.csv'), index=False)
             df.dtypes.apply(lambda x: x.name).to_json(
                 os.path.join(out_dir, out_file + '_dtypes.json'))
+
+            messagebox.showinfo(
+                "Success", "Features saved to " +
+                os.path.join(out_dir, out_file + '.csv')
+            )
+
+        else:
+            messagebox.showinfo(
+                "Success", "Feature extraction finished."
+            )
 
         # Start projector in window
         ProjectorWindow(self, X, Y, metavars)
@@ -485,6 +490,245 @@ class MetadataWindow(tk.Toplevel):
         self.withdraw()
 
 
+class FilterWindow(tk.Toplevel):
+    def __init__(self, master=None):
+        super().__init__(master)
+        self.title('Filtering mode')
+        self.create_widgets()
+
+    def create_widgets(self):
+        file_frame = tk.Frame(self)
+        file_frame.pack()
+
+        self.file_label = tk.Label(file_frame, text='Table path:')
+        self.file_label.grid(row=0, column=0, columnspan=2)
+
+        self.file_entry = tk.Entry(file_frame)
+        self.file_entry.grid(row=1, column=0, sticky='w')
+
+        self.file_button = tk.Button(
+            file_frame, text='Browse', command=self.select_file)
+        self.file_button.grid(row=1, column=1, sticky='e')
+
+        self.mod_metadata_label = tk.Label(
+            file_frame, text='Modified metadata table path:')
+        self.mod_metadata_label.grid(row=2, column=0, columnspan=2)
+
+        self.mod_metadata_entry = tk.Entry(file_frame)
+        self.mod_metadata_entry.grid(row=3, column=0, sticky='w')
+
+        self.mod_metadata_button = tk.Button(
+            file_frame, text='Browse', command=self.select_mod_metadata)
+        self.mod_metadata_button.grid(row=3, column=1, sticky='e')
+
+        self.mod_metadata_joinkey_label = tk.Label(
+            file_frame, text='Join key if using modified metadata table:')
+        self.mod_metadata_joinkey_label.grid(row=4, column=0, columnspan=2)
+
+        self.mod_metadata_joinkey_entry = tk.Entry(file_frame)
+        self.mod_metadata_joinkey_entry.grid(row=5, column=0, columnspan=2)
+
+        self.filter_var_label = tk.Label(
+            file_frame, text='Filter variable:')
+        self.filter_var_label.grid(row=6, column=0, sticky='w')
+
+        self.filter_entry = tk.Entry(file_frame)
+        self.filter_entry.grid(row=6, column=1, sticky='e')
+
+        outer_frame = tk.Frame(self)
+        outer_frame.pack()
+
+        self.use_json_dtypes_var = tk.IntVar()
+        self.use_json_dtypes_check = tk.Checkbutton(
+            outer_frame, text="Use JSON dtypes", variable=self.use_json_dtypes_var)
+        self.use_json_dtypes_check.pack()
+
+        self.columns_label = tk.Label(
+            outer_frame, text='Select columns for metadata features:')
+        self.columns_label.pack()
+
+        self.columns_listbox = tk.Listbox(outer_frame, selectmode='multiple')
+        self.columns_listbox.pack()
+
+        self.continue_button = tk.Button(
+            outer_frame, text='Continue', command=self.open_filter_window)
+        self.continue_button.pack()
+
+    def select_file(self):
+        file_path = filedialog.askopenfilename(
+            initialdir='.', title='Select a table')
+        if file_path:
+            self.file_entry.delete(0, tk.END)
+            self.file_entry.insert(0, file_path)
+            self.load_columns(file_path)
+
+    def select_mod_metadata(self):
+        file_path = filedialog.askopenfilename(
+            initialdir='.', title='Select a table')
+        if file_path:
+            self.mod_metadata_entry.delete(0, tk.END)
+            self.mod_metadata_entry.insert(0, file_path)
+
+    def load_columns(self, file_path):
+        try:
+            table = data_manager.load_data(file_path)
+        except UnicodeDecodeError:
+            messagebox.showerror(
+                "Error", "Cannot read the file. Please check the encoding.")
+            return
+
+        self.columns_listbox.delete(0, tk.END)  # clear the listbox
+        for col in table.columns:
+            self.columns_listbox.insert(tk.END, col)
+
+    def open_filter_window(self):
+        if not self.file_entry.get():
+            messagebox.showerror(
+                "Error", "Please select a data table.")
+            return
+
+        # Get metavars
+        selected_indices = self.columns_listbox.curselection()
+        selected_columns = [self.columns_listbox.get(
+            i) for i in selected_indices]
+        use_json_dtypes = bool(self.use_json_dtypes_var.get())
+
+        # Load table
+        df = data_manager.load_data(
+            path_to_data=self.file_entry.get(),
+            metavars=selected_columns,
+            use_json_dtypes=use_json_dtypes
+        )
+
+        if not self.filter_entry.get():
+            messagebox.showerror(
+                "Error", "Please provide a filter variable.")
+            return
+
+        # Load modified metadata
+        if self.mod_metadata_entry.get():
+            if self.use_json_dtypes_var.get():
+                filename = os.path.splitext(self.file_entry.get())[0]
+                try:
+                    with open(os.path.join(filename + '_dtypes.json'), 'r') as f:
+                        dtypes = json.load(f)
+                    dtypes = {k: pd.api.types.pandas_dtype(
+                        v) for k, v in dtypes.items()}
+                except FileNotFoundError:
+                    messagebox.showerror(
+                        "Error", "Cannot find dtypes file. This should be saved in the same folder as the data file with the extension _dtypes.json.")
+                    return
+                df_mod = pd.read_csv(
+                    self.mod_metadata_entry.get(), dtype=dtypes, sep='\t')
+            else:
+                df_mod = pd.read_csv(self.mod_metadata_entry.get(), sep='\t')
+
+            if self.mod_metadata_joinkey_entry.get():
+                join_key = self.mod_metadata_joinkey_entry.get()
+                df_mod = df_mod.drop(columns=df_mod.columns.drop(
+                    [join_key, self.filter_entry.get()]))
+                df = df.drop(columns=self.filter_entry.get())
+                print(df.columns)
+                print(df_mod.columns)
+            else:
+                messagebox.showwarning(
+                    "Warning", "No join key provided. Joining using intersection of columns."
+                )
+                join_key = None
+                df_mod = df_mod.drop(
+                    columns=df_mod.columns.drop(self.filter_entry.get()))
+                df = df.drop(columns=self.filter_entry.get())
+
+            df = pd.merge(df_mod, df, on=join_key)
+            print(df.columns)
+
+        # Open filter selection window
+        FilterSelectionWindow(self, df=df, filter_var=self.filter_entry.get())
+
+
+class FilterSelectionWindow(tk.Toplevel):
+    def __init__(self, master=None, df: pd.DataFrame = None, filter_var: str = None):
+        super().__init__(master)
+        self.title('Filter selection')
+        self.filter_var = filter_var
+        self.df = df
+        self.create_widgets()
+
+    def create_widgets(self):
+        file_frame = tk.Frame(self)
+        file_frame.pack()
+
+        self.out_dir_label = tk.Label(
+            file_frame, text='Output directory & Filename:'
+        )
+        self.out_dir_label.grid(row=0, column=0, columnspan=3)
+
+        self.out_dir_entry = tk.Entry(file_frame)
+        self.out_dir_entry.grid(row=1, column=0, sticky='w')
+
+        self.out_file_entry = tk.Entry(file_frame)
+        self.out_file_entry.grid(row=1, column=1, sticky='e')
+
+        self.out_dir_button = tk.Button(
+            file_frame, text='Browse', command=self.select_out_dir)
+        self.out_dir_button.grid(row=1, column=2, sticky='e')
+
+        outer_frame = tk.Frame(self)
+        outer_frame.pack()
+
+        self.filter_label = tk.Label(
+            outer_frame, text=f'Filter value for {self.filter_var}:'
+        )
+        self.filter_label.pack()
+
+        self.filter_entry = tk.Entry(outer_frame)
+        self.filter_entry.pack()
+
+        self.continue_button = tk.Button(
+            outer_frame, text='Filter', command=self.filter_selection)
+        self.continue_button.pack()
+
+    def select_out_dir(self):
+        dir_path = filedialog.askdirectory(
+            initialdir='.', title='Select a directory')
+        if dir_path:
+            self.out_dir_entry.delete(0, tk.END)
+            self.out_dir_entry.insert(0, dir_path)
+
+    def filter_selection(self):
+        if not self.out_dir_entry.get():
+            messagebox.showerror(
+                "Error", "Please select an output directory.")
+            return
+        else:
+            if not os.path.exists(self.out_dir_entry.get()):
+                os.mkdir(self.out_dir_entry.get())
+        if self.out_file_entry.get():
+            out_file = os.path.splitext(self.out_file_entry.get())[0]
+        else:
+            out_file = 'filtered_selection'
+
+        # Filter to correct format
+        filter_value = self.filter_entry.get()
+
+        if not type(filter_value) is str:
+            filter_value = str(filter_value)
+
+        # Filter the selection partition
+        data_manager.filter_selection(
+            df=self.df,
+            output_file=os.path.join(
+                self.out_dir_entry.get(), out_file + '.csv'),
+            metavar=self.filter_var,
+            metavar_filter=filter_value
+        )
+        messagebox.showinfo(
+            "Success", "Filtered selection saved to " +
+            os.path.join(self.out_dir_entry.get(), out_file + '.csv')
+        )
+        self.destroy()
+
+
 class ProjectorWindow(tk.Toplevel):
     def __init__(self, master=None, X: np.ndarray = None, Y: np.ndarray = None, metavars: list = None):
         super().__init__(master)
@@ -539,6 +783,7 @@ class ProjectorWindow(tk.Toplevel):
 
 
 class Application(tk.Frame):
+    # TODO: add button for filtering mode
     def __init__(self, master=None):
         super().__init__(master)
         self.master = master
@@ -554,18 +799,26 @@ class Application(tk.Frame):
         self.visualizer_button['text'] = 'Visualizer mode'
         self.visualizer_button['command'] = self.visualizer_mode
 
-        self.visualizer_button.pack(side='left')
+        self.visualizer_button.pack()
 
         self.feature_extractor_button = tk.Button(self)
         self.feature_extractor_button['text'] = 'Feature extraction and visualization mode'
         self.feature_extractor_button['command'] = self.feature_extractor_mode
-        self.feature_extractor_button.pack(side='right')
+        self.feature_extractor_button.pack()
+
+        self.filter_mode_button = tk.Button(self)
+        self.filter_mode_button['text'] = 'Filtering mode'
+        self.filter_mode_button['command'] = self.filter_mode
+        self.filter_mode_button.pack()
 
     def visualizer_mode(self):
         self.visualizer_window = VisualizerWindow(self)
 
     def feature_extractor_mode(self):
         self.feature_extractor_window = FeatureExtractorWindow(self)
+
+    def filter_mode(self):
+        self.filter_window = FilterWindow(self)
 
 
 root = tk.Tk()

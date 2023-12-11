@@ -7,6 +7,7 @@ Alessandro De Luca - 09/2023
 """
 import os
 import json
+from tkinter import messagebox
 import numpy as np
 import pandas as pd
 
@@ -45,19 +46,21 @@ def load_data(path_to_data: str, metavars: list = None, use_json_dtypes: bool = 
     try:
         if use_json_dtypes:
             filename = os.path.splitext(path_to_data)[0]
-            with open(os.path.join(filename + '_dtypes.json'), 'r') as f:
-                dtypes = json.load(f)
-            dtypes = {k: pd.api.types.pandas_dtype(
-                v) for k, v in dtypes.items()}
-            print(dtypes)
+            try:
+                with open(os.path.join(filename + '_dtypes.json'), 'r') as f:
+                    dtypes = json.load(f)
+                dtypes = {k: pd.api.types.pandas_dtype(
+                    v) for k, v in dtypes.items()}
+            except FileNotFoundError:
+                messagebox.showerror(
+                    "Error", "Cannot find dtypes file. This should be saved in the same folder as the data file with the extension _dtypes.json.")
+                return
             df = pd.read_csv(path_to_data, sep=sep, dtype=dtypes)
 
         elif metavars is not None:
             dtypes = {k: pd.api.types.pandas_dtype(
-                'category') for k in metavars if k != 'selection'}
+                'category') for k in metavars}
 
-            if 'selection' in metavars:
-                dtypes['selection'] = pd.api.types.pandas_dtype('int64')
             df = pd.read_csv(path_to_data, sep=sep, dtype=dtypes)
         else:
             df = pd.read_csv(path_to_data, sep=sep)
@@ -157,21 +160,38 @@ def split_data(df: pd.DataFrame, features: list, metavars: list, add_selection_c
             return X, Y, metavars
 
 
-def filter_selection(df: pd.DataFrame, output_file: str, metavar: str = 'selection', metavar_filter=1) -> None:
+def filter_selection(df: pd.DataFrame, output_file: str, metavar: str = 'selection', metavar_filter: str = '1') -> None:
     """
     Filters the selection partition from the data and saves it in the same folder 
     with the addition of '_selection' to the filename.
 
     Parameters:
     ----------- 
-
+    df: pd.DataFrame
+        Data table.
+    output_file: str
+        Path to the output file.
+    metavar: str
+        Name of the metadata variable to filter.
+    metavar_filter: str
+        Value of the metadata variable to filter.
     """
     # Filter the selection partition
-    df = df[df[metavar] == metavar_filter]
+    df_filtered = df[df[metavar] == metavar_filter]
+
+    if df_filtered.shape[0] == 0:
+        # Try using int
+        df_filtered = df[df[metavar] == int(metavar_filter)]
+
+    if df_filtered.shape[0] == 0:
+        messagebox.showerror(
+            "Error", "Filtering leads to empty dataframe.")
+        return
 
     # Save the selection partition
     if not os.path.exists(os.path.dirname(output_file)):
         os.makedirs(os.path.dirname(output_file))
     output_filename = os.path.splitext(output_file)[0]
-    df.to_csv(output_filename + '.csv', index=False)
-    df.dtypes.apply(lambda x: x.name).to_json(output_filename + '_dtypes.json')
+    df_filtered.to_csv(output_filename + '.csv', index=False)
+    df_filtered.dtypes.apply(lambda x: x.name).to_json(
+        output_filename + '_dtypes.json')
