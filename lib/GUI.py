@@ -262,10 +262,15 @@ class FeatureExtractorWindow(tk.Toplevel):
         self.metadata_vars['separator'] = separator
         self.metadata_vars['add_selection_column'] = add_selection_column
 
-        # Add a start analysis button
-        self.start_analysis_button = tk.Button(
-            self, text='Start analysis', command=self.feature_extraction_pipeline)
-        self.start_analysis_button.pack()
+        # Check if the start analysis button already exists
+        if hasattr(self, 'start_analysis_button'):
+            # Update command of existing button
+            self.start_analysis_button['command'] = self.feature_extraction_pipeline
+        else:
+            # Add a start analysis button
+            self.start_analysis_button = tk.Button(
+                self, text='Start analysis', command=self.feature_extraction_pipeline)
+            self.start_analysis_button.pack()
 
         self.deiconify()
 
@@ -275,12 +280,10 @@ class FeatureExtractorWindow(tk.Toplevel):
                 audio_dir=self.filename, feature_methods=self.feature_methods,
                 metadata_vars=self.metadata_vars
             )
-            print("Feature extraction pipeline")
         else:
             featureExtractor = SpeakerEmbedder(
                 audio_dir=self.filename, metadata_vars=self.metadata_vars
             )
-            print("Speaker embeddings pipeline")
 
         X, Y, metavars, feature_labels = featureExtractor.process_files()
 
@@ -782,7 +785,6 @@ class ProjectorWindow(tk.Toplevel):
 
 
 class Application(tk.Frame):
-    # TODO: add button for filtering mode
     def __init__(self, master=None):
         super().__init__(master)
         self.master = master
