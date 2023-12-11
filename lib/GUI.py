@@ -12,10 +12,9 @@ import webbrowser
 import json
 import numpy as np
 import pandas as pd
-import data_manager
-import embedding_projector
-from feature_extraction import FeatureExtractor
-from speaker_embeddings import SpeakerEmbedder
+from lib import data_manager, embedding_projector
+from lib.feature_extraction import FeatureExtractor
+from lib.speaker_embeddings import SpeakerEmbedder
 
 
 # TODO: test with excel files
@@ -821,6 +820,7 @@ class Application(tk.Frame):
         self.filter_window = FilterWindow(self)
 
 
-root = tk.Tk()
-app = Application(master=root)
-app.mainloop()
+def main():
+    root = tk.Tk()
+    app = Application(master=root)
+    app.mainloop()
