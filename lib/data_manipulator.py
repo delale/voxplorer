@@ -8,10 +8,11 @@ to do so.
 """
 
 import os
+import json
 import pandas as pd
 
 
-def filter_selection(output_file: str) -> None:
+def filter_selection(input_file: str, output_file: str) -> None:
     """
     Filters the selection partition from the data and saves it in the same folder 
     with the addition of '_selection' to the filename.
@@ -21,9 +22,18 @@ def filter_selection(output_file: str) -> None:
     output_file: str
         Path to the output file.
     """
-
-    if os.path.exists(output_file):
-        df = pd.read_csv(output_file)
+    # Load the data
+    if os.path.exists(input_file):
+        basename = os.path.basename(input_file)
+        filename, ext = os.path.splitext(basename)
+        if os.path.isfile(os.path.join(filename + '_dtypes.json')):
+            with open(os.path.join(filename + '_dtypes.json'), 'r') as f:
+                dtypes = json.load(f)   # json dtypes
+            dtypes = {k: pd.api.types.pandas_dtype(
+                v) for k, v in dtypes.items()}  # pandas readable dtypes
+            df = pd.read_csv(input_file, dtype=dtypes)
+        else:
+            df = pd.read_csv(input_file)
     else:
         raise FileNotFoundError("File not found.")
 
@@ -31,12 +41,11 @@ def filter_selection(output_file: str) -> None:
     df = df[df['selection'] == 1]
 
     # Save the selection partition
-    output_dir = os.path.dirname(output_file)
-    output_basename = os.path.splitext(os.path.basename(output_file))[0]
-    output_filename = os.path.join(
-        output_dir, output_basename + '_selection.csv'
-    )
-    df.to_csv(output_filename, index=False)
+    if not os.path.exists(os.path.dirname(output_file)):
+        os.makedirs(os.path.dirname(output_file))
+    output_filename = os.path.splitext(output_file)[0]
+    df.to_csv(output_filename + '.csv', index=False)
+    df.dtypes.apply(lambda x: x.name).to_json(output_filename + '_dtypes.json')
 
 
 def extract_metadata(filename: str, metavars: list, separator: str = '_', ) -> dict:

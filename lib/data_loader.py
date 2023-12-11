@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 
-def load_data(path_to_data: str):
+def load_data(path_to_data: str, metavars: list = None):
     """
     Loads a table given a path. Infers that correct separator character.
 
@@ -16,6 +16,9 @@ def load_data(path_to_data: str):
     -----------
     path_to_data: str
         Path to the data table.
+    metavars: list
+        List of metadata variable names. Used to select the dtype of metadata variables.
+        If None, normal inference of dytpes is used.
 
     Returns:
     --------
@@ -36,8 +39,18 @@ def load_data(path_to_data: str):
         else:
             sep = input("What is the separator character for the data?")
 
+    if metavars is not None:
+        dtypes = {k: pd.api.types.pandas_dtype(
+            'category') for k in metavars if k != 'selection'}
+
+        if 'selection' in metavars:
+            dtypes['selection'] = pd.api.types.pandas_dtype('int64')
+
     try:
-        df = pd.read_csv(path_to_data, sep=sep)
+        if metavars is not None:
+            df = pd.read_csv(path_to_data, sep=sep, dtype=dtypes)
+        else:
+            df = pd.read_csv(path_to_data, sep=sep)
     except:
         UnicodeDecodeError(
             "Cannot read the file")
