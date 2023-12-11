@@ -1,5 +1,6 @@
 """Data loading module for embedding projector.
 Data is loaded using a path and then divided into the variables and features.
+Also contains a function to filter the data by a metavariable.
 
 ----------
 Alessandro De Luca - 09/2023

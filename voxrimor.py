@@ -9,7 +9,7 @@ import os
 import argparse
 import re
 
-from lib import data_loader, embedding_projector
+from lib import data_manager, embedding_projector
 
 
 def main():
@@ -91,8 +91,7 @@ def main():
     ptd = os.path.join(os.getcwd(), args.filepath)
     log_dir = os.path.join(os.getcwd(), args.log_dir)
 
-    # Run the data_loader function
-    X, Y, metavars = data_loader.load_data(
+    X, Y, metavars = data_manager.load_data(
         features=features, metavars=metavars, path_to_data=ptd
     )
 

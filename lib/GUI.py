@@ -12,7 +12,7 @@ import webbrowser
 import json
 import numpy as np
 import pandas as pd
-import data_loader
+import data_manager
 import embedding_projector
 from feature_extraction import FeatureExtractor
 from speaker_embeddings import SpeakerEmbedder
@@ -70,7 +70,7 @@ class VisualizerWindow(tk.Toplevel):
 
     def load_columns(self, file_path):
         try:
-            table = data_loader.load_data(file_path)
+            table = data_manager.load_data(file_path)
         except UnicodeDecodeError:
             messagebox.showerror(
                 "Error", "Cannot read the file. Please check the encoding.")
@@ -93,9 +93,9 @@ class VisualizerWindow(tk.Toplevel):
         add_selection_column = bool(self.selection_var.get())
 
         # Load data
-        df = data_loader.load_data(
+        df = data_manager.load_data(
             self.file_entry.get(), metavars=selected_columns)
-        X, Y, metavars = data_loader.split_data(
+        X, Y, metavars = data_manager.split_data(
             df=df, features=None, metavars=selected_columns,
             add_selection_column=add_selection_column
         )
