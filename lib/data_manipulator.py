@@ -25,7 +25,7 @@ def filter_selection(input_file: str, output_file: str) -> None:
     # Load the data
     if os.path.exists(input_file):
         basename = os.path.basename(input_file)
-        filename, ext = os.path.splitext(basename)
+        filename, _ = os.path.splitext(basename)
         if os.path.isfile(os.path.join(filename + '_dtypes.json')):
             with open(os.path.join(filename + '_dtypes.json'), 'r') as f:
                 dtypes = json.load(f)   # json dtypes
