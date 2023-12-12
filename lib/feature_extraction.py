@@ -277,7 +277,7 @@ class FeatureExtractor:
         fitch_vtl : float
             Fitch VTL.
         delta_f : float
-            Delta f.
+            VTL Delta f.
         """
         # Extract formant means
         f1: float = formants[0]
@@ -301,7 +301,7 @@ class FeatureExtractor:
         # delta f
         xysum: float = (0.5 * f1) + (1.5 * f2) + (2.5 * f3) + (3.5 * f4)
         xsquaredsum: float = (0.5 ** 2) + (1.5 ** 2) + (2.5 ** 2) + (3.5 ** 2)
-        delta_f: float = xysum / xsquaredsum
+        delta_f: float = 3500 / (2*xysum / xsquaredsum)
 
         return formant_dispersion, avg_formant, geometric_mean, fitch_vtl, delta_f
 
