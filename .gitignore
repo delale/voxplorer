@@ -6,6 +6,11 @@ logs/
 .vscode
 .DS_Store
 __pycache__
+screenshots/embedding_dark.png
 
 # pretrained classifier hyperparameters
 .pretrained_classifier
+
+# Demo folder & presentation
+demo
+*.pptx
