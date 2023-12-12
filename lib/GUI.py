@@ -213,7 +213,7 @@ class FeatureExtractorWindow(tk.Toplevel):
     def open_methods_window(self):
         if not self.file_entry.get():
             messagebox.showerror(
-                "Error", "Please select a data table.")
+                "Error", "Please select a directory containing WAV files or a WAV file.")
             return
 
         if self.mode_var.get() == "feature extraction":
