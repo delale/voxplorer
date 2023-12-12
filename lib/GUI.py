@@ -629,7 +629,8 @@ class FilterWindow(tk.Toplevel):
                 join_key = self.mod_metadata_joinkey_entry.get()
                 df_mod = df_mod.drop(columns=df_mod.columns.drop(
                     [join_key, self.filter_entry.get()]))
-                df = df.drop(columns=self.filter_entry.get())
+                if self.filter_entry.get() in df.columns:
+                    df = df.drop(columns=self.filter_entry.get())
                 print(df.columns)
                 print(df_mod.columns)
             else:
@@ -639,10 +640,10 @@ class FilterWindow(tk.Toplevel):
                 join_key = None
                 df_mod = df_mod.drop(
                     columns=df_mod.columns.drop(self.filter_entry.get()))
-                df = df.drop(columns=self.filter_entry.get())
+                if self.filter_entry.get() in df.columns:
+                    df = df.drop(columns=self.filter_entry.get())
 
             df = pd.merge(df_mod, df, on=join_key)
-            print(df.columns)
 
         # Open filter selection window
         FilterSelectionWindow(self, df=df, filter_var=self.filter_entry.get())

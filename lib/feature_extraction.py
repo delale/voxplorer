@@ -2,6 +2,7 @@ from collections import defaultdict
 from typing import Tuple
 import os
 import warnings
+from tkinter import messagebox
 import numpy as np
 import librosa
 import parselmouth
@@ -631,6 +632,9 @@ class FeatureExtractor:
         n_fft: int = int(win_length * sr / 1000)
         hop_length: int = int(overlap * sr / 1000)
 
+        # setting fmin for spectral contrasts
+        fmin: float = 200.0
+
         # Spectral centroid
         spectral_centroids: np.ndarray = librosa.feature.spectral_centroid(
             y=y, sr=sr, n_fft=n_fft, hop_length=hop_length, window='hamming'
@@ -642,10 +646,18 @@ class FeatureExtractor:
         )
 
         # Spectral contrast
-        spectral_contrasts: np.ndarray = librosa.feature.spectral_contrast(
-            y=y, sr=sr, n_fft=n_fft, hop_length=hop_length, window='hamming',
-            n_bands=n_bands_contrasts
-        )
+        try:
+            spectral_contrasts: np.ndarray = librosa.feature.spectral_contrast(
+                y=y, sr=sr, n_fft=n_fft, hop_length=hop_length, window='hamming',
+                n_bands=n_bands_contrasts, fmin=fmin
+            )
+        except librosa.util.exceptions.ParameterError:
+            fmin: float = 0.5 * sr * 2**(-n_bands_contrasts)
+            spectral_contrasts: np.ndarray = librosa.feature.spectral_contrast(
+                y=y, sr=sr, n_fft=n_fft, hop_length=hop_length, window='hamming',
+                n_bands=n_bands_contrasts, fmin=fmin
+            )
+
         if use_mean_contrasts:
             spectral_contrasts: np.ndarray = np.mean(
                 spectral_contrasts, axis=0, keepdims=True
