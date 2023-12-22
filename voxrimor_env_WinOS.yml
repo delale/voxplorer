@@ -1,0 +1,17 @@
+name: voxrimor
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10.*
+  - pandas
+  - umap-learn
+  - librosa
+  - pip
+  - pip:
+    - numpy==1.24.3
+    - typing-extensions==4.5.0
+    - speechbrain
+    - praat-parselmouth
+    - tensorflow
+

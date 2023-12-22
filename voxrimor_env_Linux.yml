@@ -14,5 +14,3 @@ dependencies:
     - speechbrain
     - praat-parselmouth
     - tensorflow
-    test
-
