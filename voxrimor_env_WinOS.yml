@@ -13,5 +13,4 @@ dependencies:
     - typing-extensions==4.5.0
     - speechbrain
     - praat-parselmouth
-    - tensorflow
-
+    - tensorflow==2.12.0
