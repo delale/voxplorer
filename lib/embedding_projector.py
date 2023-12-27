@@ -108,7 +108,7 @@ class TensorBoardTool:
         tb = program.TensorBoard()
         tb.configure(argv=[
             None, '--logdir', self.log_dir,
-            '--reuse_port', 'True'
+            #'--reuse_port', 'True'
         ])
         url = tb.launch()
         return tb, url+'/#projector'
