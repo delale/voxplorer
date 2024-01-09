@@ -1,6 +1,5 @@
 # voxplorer
-![Embedding Projector](<screenshots/Screenshot 2023-09-12 at 17.48.26.png>)
-![Embedding Projector: selected point](<screenshots/Screenshot 2023-09-12 at 17.48.54.png>)
+![Embedding Projector example](screenshots/embedding_dark.png)
 | Table of Contents               |
 | ------------------------------- |
 | [Installation](#installation)   |
@@ -17,17 +16,24 @@ git clone https://github.com/delale/voxplorer.git
 
 Install [miniconda](https://docs.conda.io/projects/miniconda/en/latest/) or [Anaconda](https://www.anaconda.com/download).  
 Open your preferred terminal emulator in the `voxplorer` directory and install the `voxplorer` conda environment:  
-  
-**WinOS or Linux**
-```sh
-conda env create -f voxplorer_env_Win_and_Linux.yml
-```
 
-**MacOS**
+**Linux**
+```sh
+conda env create -f voxplorer_env_Linux.yml
+```
+:exclamation: This installation has been tested on x86 64-bit Ubuntu only.
+
+**WinOS**
+```sh
+conda env create -f voxplorer_env_WinOS.yml
+```
+:exclamation: This installation has not been tested thoroughly yet.
+
+**OSX**
 ```sh
 conda env create -f voxplorer_env_OSX.yml
 ```
-Sometimes an error during the installation of tensorflow and tensorflow-metal may occur:
+Sometimes an error during the installation of tensorflow and tensorflow-metal may occur in particular with older Intel x86 Macs:
 ```sh
 Pip failed
 
@@ -45,91 +51,49 @@ SYSTEM_VERSION_COMPAT=0 pip install tensorflow tensorflow-metal
 conda activate voxplorer
 which python3
 ```
-It should return something along the lines of   
+It should return something along the lines of  
 `/Users/your_user/miniconda3/envs/voxplorer/bin/python3`  
 or  
 `/Users/your_user/anaconda3/envs/voxplorer/bin/python3`
 
-## Usage
-To run the program open a terminal in the voxplorer directory and run 
+## Main Usage
+To run the program open a terminal emulator in the voxplorer directory and run 
 ```sh
 conda activate voxplorer
 ```
-To run the embedding projector on a dataset run:
+To open the voxplorer GUI run:
 ```sh
-python3 voxplorer.py -f path_to_the_database -x feature variables -y metadata variables --log_dir path_to_logs_directory
+python3 voxplorer.py
 ```
-You will see a CLI output similar to this:
-```
-TensorBoard Embedding Projector at: http://localhost:6006//#projector
-Serving TensorBoard on localhost; to expose to the network, use a proxy or pass --bind_all
-TensorBoard 2.13.0 at http://localhost:6006/ (Press CTRL+C to quit)
-```
-To open directly TensorBoard embedding projector Cmd+Click (MacOS) or CTRL+Click on the first link (`http://localhost:6006//#projector`) or copy and paste that link to your browser.  
-If you open the second link, you can navigate to the embedding projector by clicking on the drop-down menu in the top-right corner of the page which says **INACTIVE**, scroll down and click on **PROJECTOR**.
-![Alt text](<screenshots/Screenshot 2023-09-12 at 16.44.30.png>)
-![Alt text](<screenshots/Screenshot 2023-09-12 at 16.44.51.png>)
-When you want to exit you can simply close the embedding projector page and in your terminal emulator press CTRL+C.
-## Arguments
-- `--filepath` or `-f`: path to the data.
-- `--features` or `-x`: embedding features that can have several forms (default: `None`):
-  - `-x x1 x2 x3`: will select the features by column names ('x1', 'x2', 'x3')
-  - `-x 1 3 4`: will select the features by column indices (1, 3, 4); *remember that python indices start at 0, so the first column will have index 0*
-  - `-x "(0, 4)"`: will select all columns by indices within the range [0, 4] (0, 1, 2, 3,4)
-  - `-x all`: will take all columns of the data
-  - `-x None`: will take all columns of the data which have not been specified in `--metavars`
-- `--metavars` or `-y`: metadata variables that can have several forms (default: `None`):
-  - `-y y1 y2 y3`: will select the metadata by column names ('y1', 'y2', 'y3')
-  - `-y 1 3 4`: will select the metadata by column indices (1, 3, 4); *remember that python indices start at 0, so the first column will have index 0*
-  - `-y "(0, 4)"`: will select all columns by indices within the range [0, 4] (0, 1, 2, 3,4)
-  - `-y infer`: will take all columns of the data which have not been specified in `--features`
-  - `-y None`: no metadata
-- `--log_dir`: (optional) path to the logs directory (default: `./logs/`). The logs directory is where the data for TensorBoard is set-up.
+A GUI window should open:  
+![Main GUI window](<screenshots/mainGUI.png>)  
+Select your preferred mode... and have fun exploring!
 
-## Example Usage
-Given a database with 10 columns of which the last 6 are features (columns 5 through 9) and the first four are metadata variables: filename, speaker, sex, utterance.  
-The database is located in my voxplorer working directory at `data/db.csv`
-To run the embedding projector with just the features by running:
-```sh
-python3 voxplorer.py -f ./data/db.csv -x "(5, 9)" -y None
-```
-To run the embedding projector with the features and only `sex` and `speaker` by running:
-```sh
-python3 voxplorer.py -f ./data/db.csv -x "(5, 9)" -y sex speaker
-```
-or
-```sh
-python3 voxplorer.py -f ./data/db.csv -x "(5, 9)" -y 2 1
-```
-To run the embedding projector with the features and all of the metadata variables by running:
-```sh
-python3 voxplorer.py -f ./data/db.csv -x "(5, 9)" -y infer
-```
-To run the embedding projector with only `F0`, `F1`, and `HNR` as features and all of the metadata variables by running:
-```sh
-python3 voxplorer.py -f ./data/db.csv -x F0 F1 HNR -y "(0 3)"
-```
+### Visualizer Mode:
+With this mode you can visualize in the embedding projector a table of previously extracted features. When selected you will be prompted to select a table; after the table has been selected, the box below will show you a list containing all of the table columns. You can click on each variable that you would like to use as metadata variables. By checking the `Add 'selection' column` checkbox voxplorer will include a `selection` column in the metadata, which by default contains only 0s and can be used to filter the data from within the visualizer. 
+> Metadata variables are usually categorical variables used for colouring and labelling in the embedding visualization. Please select all variables that are not to be used as features in the calculation of the reduced dimension space.  
+ 
+![Visualizer mode window](<screenshots/visGUI.png>)
 
-## Tips & Tricks
-If you want to use the embedding projector to select data and would like to be able to filter the original data based on 
-this selection you can modifiy the original table by adding a "phantom" variable called `selection` containing only 0s for example (can be any value indicating the unselected data).  
-You can then include this variable in your metatdata when running `voxplorer.py`.  
-Going back to the db.csv example we could create such a variable in Python like so:
-```sh
-conda activate voxplorer
-python3
-```
-```py
-import pandas as pd
-df = pd.read_csv('./data/db.csv')
-df['selection'] = [0]*df.shape[0]
-df.to_csv('./data/db_sel.csv')
-exit()
-```
-Open embedding projector:
-```sh
-python3 voxplorer.py -f ./data/db_sel.csv -x "(5, 9)" -y filename sex speaker selection
-```
+### Feature Extraction and Visualization Mode:
+With this mode you can extract acoustic features from a set of audio files directly within voxplorer. To do this, all you need to do is select the directory where the audio files (as of now only .WAV files are compatible) are contained.
+> The directory can contain also other files (e.g. Praat .TextGrid); voxplorer will simply ignore files that are not audio files.  
+
+> For ease of use, we decided to include the possibility of extracting features from one audio file only (using the `Browse file` button for example). It does not make a lot of sense to project 1 observation, and the projector is unable to visualize only 1 observation at a time, but needs a group of observations to work properly.  
+
+After having selected the input files, you can specify an output directory and filename if you would like to save the extracted features to a table.  
+You can then select weather you would like to extract `Speaker embeddings` (ECAPA-TDNN VoxCeleb2 X-vectors) or a set of other acoustic features (`Feature extraction`) by selecting the corresponding radio button.  
+![Feature extraction and visualization mode window](<screenshots/featextractGUI.png>)
+
+#### Specifying metadata:
+
+
+### Project!
+When finished with the setup (in any window) you can click `Continue` and a `Projector` window will open. By clicking on `Project!` a new browser tab will open automatically on the embedding projector local webpage.  
+
+To exit you can simply close the browser tab.
+> A `Stop projector` button will appear in the `Projector` window, but unfortunately this is as of now not functional.
+
 In the embedding projector you can then use the several different tools (rectangle selection, selecting by label for e.g. sex, clicking on point and selecting n nearest neighbours) and then on the left tab, navigate to `Edit by` and change the metadata to edit to `selection`. Then change the value to your preferred selection value (e.g. 1). You can then download the edited metadata by clicking on download. You can then select only those rows with the edited `selection` value and use the key variable (e.g. `filename`) to filter the original data. This works well only when including a key ID variable that is unique for each row in the original dataframe. Theoretically, you can also use the indices of the selected rows to filter the dataframe as they should remain the same (*caveat: if the original contains NAs, the indices will be relative only to the NA-filtered data*).
 
 ## Caveats
