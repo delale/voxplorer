@@ -1,4 +1,4 @@
-# FILEPATH: VoxRimor/tests/test_data_manipulator.py
+# FILEPATH: voxplorer/tests/test_data_manipulator.py
 
 import os
 import unittest

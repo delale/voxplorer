@@ -7,7 +7,7 @@ logs/
 .DS_Store
 __pycache__
 screenshots/embedding_dark.png
-test_voxrimor_env_OSX.yml
+test_voxplorer_env_OSX.yml
 
 # pretrained classifier hyperparameters
 .pretrained_classifier

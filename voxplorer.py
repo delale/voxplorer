@@ -13,7 +13,7 @@ from lib import data_manager, embedding_projector, GUI
 
 # def main():
 #     parser = argparse.ArgumentParser(
-#         description="""VoxRimor: Speaker embedding projector using TensorBoard.
+#         description="""voxplorer: Speaker embedding projector using TensorBoard.
 #         The program takes as inputs the path to the data, the metadata variable names
 #         or indices if any, the features variable names or indices or None/'all' if
 #         all variables are features.

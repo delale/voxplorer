@@ -1,4 +1,4 @@
-name: voxrimor
+name: voxplorer
 channels:
   - defaults
   - conda-forge

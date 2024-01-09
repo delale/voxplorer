@@ -1,5 +1,5 @@
 """
-Graphical User Interface for VoxRimor built using tkinter.
+Graphical User Interface for voxplorer built using tkinter.
 """
 
 from collections import defaultdict
@@ -789,12 +789,12 @@ class Application(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
         self.master = master
-        self.master.title('VoxRimor')
+        self.master.title('voxplorer')
         self.pack()
         self.create_widgets()
 
     def create_widgets(self):
-        self.welcome = tk.Label(self, text='Welcome to VoxRimor!')
+        self.welcome = tk.Label(self, text='Welcome to voxplorer!')
         self.welcome.pack(side='top')
 
         self.visualizer_button = tk.Button(self)
