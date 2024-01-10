@@ -13,5 +13,7 @@ test_voxplorer_env_OSX.yml
 .pretrained_classifier
 
 # Demo folder & presentation
-demo
+demo/input_data
+demo/output_data
 *.pptx
+
