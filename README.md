@@ -1,13 +1,15 @@
-# voxplorer
-![Embedding Projector example](screenshots/embedding_dark.png)
+# voxplorer (Alpha v0.0.1)
+![Embedding Projector example](screenshots/embedding_dark.png)  
+
 | Table of Contents               |
 | ------------------------------- |
 | [Installation](#installation)   |
-| [Usage](#usage)                 |
+| [Usage](#main-usage)                 |
 | [Arguments](#arguments)         |
 | [Example Usage](#example-usage) |
 | [Tips & Tricks](#tips--tricks)  |
-| [Caveats](#caveats)             |
+| [Caveats](#caveats)             |  
+
 ## Installation
 Clone the git repository by running in your preferred terminal emulator:
 ```sh
@@ -83,13 +85,27 @@ With this mode you can extract acoustic features from a set of audio files direc
 
 After having selected the input files, you can specify an output directory and filename if you would like to save the extracted features to a table.  
 You can then select weather you would like to extract `Speaker embeddings` (ECAPA-TDNN VoxCeleb2 X-vectors) or a set of other acoustic features (`Feature extraction`) by selecting the corresponding radio button.  
+If you select `Feature extraction` a box will appear on the bottom of the window (second screenshot below). Here you will find a list of feature-sets available for extraction:  
+- Mel features: MFCCs + (optional) delta and delta-delta.
+- Acoustic features: pitch descriptors, formants (F1 - F4), vocal tract estimates, HNR, jitter, shimmer, RMS energy.
+- Low Lever features: spectral centroid, spectral bandwidth, spectral contrasts (or avg. contrast), spectral flatness, spectral roll-off, zero-crossing rate.
+- Linear Predictive Cepstral Coefficients (LPCCs).  
+You can select one or multiple of these feature-sets to extract from the audio files. For each selected feature-set a specific window to specify parameter values for that feature-set will appear; please refer to the [demo_Jan2024.pdf](demo/demo_Jan2024.pdf) document for more information regarding the feature-sets and the available parameters.  
+Confirm your selection by clicking on `Continue` and a [`Projector`](#project) window will open.  
+
 ![Feature extraction and visualization mode window](<screenshots/featextractGUI.png>)
+![Feature extraction and visualization mode window 2](<screenshots/featextractGUI2.png>)
 
 #### Specifying metadata:
+The `Metadata specification` window is used to specify what is the metadata information contained in the filenames of the recordings. `voxplorer` automatically loads a filename and separates its components using the `Separator` character (by default `_`). Changing the `Separator` will automatically update the metadata variables fields with the new separation. You can then specify for each component of the filename what the variable should be named in the embedding visualizer (this will also be saved in the output table if it had been specified). To ignore a variable use `-`. As in the [feature extraction mode](#feature-extraction-and-visualization-mode), you can select `Add 'selection' column` to include a placeholder variable to make selections from within the visualizer.  
+![Metadata selection window](<screenshots/metadataselGUI.png>)  
 
+After having clicked on `Continue` you will be brought back to the `Feature extraction mode` window, where a `Start analysis` button will have appeared. Click this button to begin processing the files.  
+When the analysis is finished you will be greeted by a `Features saved` confirmation message and the [`Projector`](#project) window will open.  
+![File saved message](<screenshots/filesavedmsg.png>)  
 
 ### Project!
-When finished with the setup (in any window) you can click `Continue` and a `Projector` window will open. By clicking on `Project!` a new browser tab will open automatically on the embedding projector local webpage.  
+By clicking on `Project!` a new browser tab will open automatically on the embedding projector local webpage.  
 
 To exit you can simply close the browser tab.
 > A `Stop projector` button will appear in the `Projector` window, but unfortunately this is as of now not functional.
