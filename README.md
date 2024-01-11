@@ -58,7 +58,7 @@ It should return something along the lines of
 or  
 `/Users/your_user/anaconda3/envs/voxplorer/bin/python3`
 
-## Main Usage
+## Usage
 To run the program open a terminal emulator in the voxplorer directory and run 
 ```sh
 conda activate voxplorer
@@ -110,7 +110,21 @@ By clicking on `Project!` a new browser tab will open automatically on the embed
 To exit you can simply close the browser tab.
 > A `Stop projector` button will appear in the `Projector` window, but unfortunately this is as of now not functional.
 
-In the embedding projector you can then use the several different tools (rectangle selection, selecting by label for e.g. sex, clicking on point and selecting n nearest neighbours) and then on the left tab, navigate to `Edit by` and change the metadata to edit to `selection`. Then change the value to your preferred selection value (e.g. 1). You can then download the edited metadata by clicking on download. You can then select only those rows with the edited `selection` value and use the key variable (e.g. `filename`) to filter the original data. This works well only when including a key ID variable that is unique for each row in the original dataframe. Theoretically, you can also use the indices of the selected rows to filter the dataframe as they should remain the same (*caveat: if the original contains NAs, the indices will be relative only to the NA-filtered data*).
+## Useful functions
+
+### Interactive selection:
+In the embedding projector you can then use the several different tools (rectangle selection, selecting by label for e.g. sex, clicking on point and selecting n nearest neighbours) and then on the left tab, navigate to `Edit by` and change the metadata to edit to `selection` (available only if `Add 'selection' columns` was ticked). Change the value to your preferred selection value (e.g. 1). You can then download the edited metadata by clicking on download.
+
+### Filtering mode:
+The filtering mode allows you to filer a table by a specific column. This can be done using any table, but is especially useful to finalize the [interactive filtering](#interactive-selection) functionality of voxplorer.  
+When selecting this mode you will be prompted with a `Filtering mode` windows. Here you can select a table to filter, a modified metadata TSV table (from voxplorer is using the interactive selection functionality), a join key (variable used to join the original table and the filtered metadata; used only if a modified metadata table has been selected), a selection for the `filtering variable`, and a selection box to indicate the metadata variables (this is used so that these variables are treated as strings and not numbers).  
+![Filtering window](<screenshots/filterGUI.png>)  
+
+After clicking on `Continue`, you will be prompted to select an output directory and input an output filename. You will also have to input the value you would like to filter for of the previously selected `filtering variable`. By clicking on `Filter` you will be met with a successful filtering message.  
+![Filter window 2](<screenshots/filterGUI2.png>)  
+
+### Use JSON dtypes check-box:
+
 
 ## Caveats
 - Data that contains NAs: a Warning will be raised and the rows containing NA values will be removed (otherwise TensorBoard will raise an error where it is unable to transorm str to float64).
