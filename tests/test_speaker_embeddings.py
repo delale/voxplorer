@@ -33,12 +33,13 @@ class TestSpembed(unittest.TestCase):
         self.assertEqual(result.shape, (1, 192))
 
     def test_process_files(self):
-        result_features, result_metadata_values, result_metadata_labels = self.se.process_files()
+        result_features, result_metadata_values, result_metadata_labels, result_feature_labels = self.se.process_files()
 
         # Type checks
         self.assertIsInstance(result_features, np.ndarray)
         self.assertIsInstance(result_metadata_values, np.ndarray)
         self.assertIsInstance(result_metadata_labels, list)
+        self.assertIsInstance(result_feature_labels, list)
 
         # Result has shape (n_files, n_features)
         self.assertEqual(result_features.shape,
@@ -46,6 +47,7 @@ class TestSpembed(unittest.TestCase):
         self.assertEqual(result_metadata_values.shape,
                          (len(self.se.audio_files), 3))
         self.assertEqual(len(result_metadata_labels), 3)
+        self.assertEqual(len(result_feature_labels), 192)
 
 
 if __name__ == '__main__':
