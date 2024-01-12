@@ -14,7 +14,7 @@ class TestFeatureExtractor(unittest.TestCase):
             'mel_features': {'deltas': True, 'summarise': True, 'n_mfcc': 13},
             'acoustic_features': {'f0min': 75.0, 'f0max': 600.0},
             'low_lvl_features': {'use_mean_contrasts': True, 'summarise': True},
-            'lpc_features': {'summarise': True}
+            'lpc_features': {'n_lpcc': 13, 'summarise': True}
         }
         metadata_vars = {
             'metavars': ['speaker', '-', 'sentence'],
@@ -101,12 +101,13 @@ class TestFeatureExtractor(unittest.TestCase):
         self.assertEqual(result.shape, (13*2,))
 
     def test_process_files(self):
-        result_features, result_metavalues, result_metalabel = self.fe.process_files()
+        result_features, result_metavalues, result_metalabel, result_featlabel = self.fe.process_files()
 
         # Type checks
         self.assertIsInstance(result_features, np.ndarray)
         self.assertIsInstance(result_metavalues, np.ndarray)
         self.assertIsInstance(result_metalabel, list)
+        self.assertIsInstance(result_featlabel, list)
 
         # Result has shape (n_files, n_features)?
         self.assertEqual(result_features.shape,
@@ -114,6 +115,7 @@ class TestFeatureExtractor(unittest.TestCase):
         self.assertEqual(result_metavalues.shape,
                          (len(self.fe.audio_files), 3))
         self.assertEqual(len(result_metalabel), 3)
+        self.assertEqual(len(result_featlabel), 13*6+18+12+13*2)
 
 
 if __name__ == '__main__':
