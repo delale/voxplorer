@@ -4,11 +4,11 @@
 | Table of Contents               |
 | ------------------------------- |
 | [Installation](#installation)   |
-| [Usage](#main-usage)                 |
-| [Arguments](#arguments)         |
-| [Example Usage](#example-usage) |
-| [Tips & Tricks](#tips--tricks)  |
-| [Caveats](#caveats)             |  
+| [Usage](#usage)                 |
+| [Useful functions](#useful-functions)         |
+| [Future features](#future-features) |
+| [Caveats](#caveats)  |
+| [Acknowledgements](#acknowledgements)             |  
 
 ## Installation
 Clone the git repository by running in your preferred terminal emulator:
@@ -127,11 +127,25 @@ After clicking on `Continue`, you will be prompted to select an output directory
 When loading any table in voxplorer you will see a check-box labelled `Use JSON dtypes`. This check-box tells voxplorer to look in the same directory as the table for a file with the same name + `_dtypes` and with a JSON extension. This file should contain details for the `Pandas datatype` of each column in the table and is used to ensure that categorical variables are treated as such even in the case of numerical characters. When creating tables using voxplorer (both from the feature extraction and filtering modes), voxplorer will automatically also save this JSON dtypes file.
 
 ## Future features:
-[ ] Praat TextGrid support for feature extraction in selected parts of audio (e.g. vowels).  
-[ ] [VoiceSauce](https://phonetics.ucla.edu/voicesauce/) feature extraction.  
+- [ ] Praat TextGrid support for feature extraction in selected parts of audio (e.g. vowels).  
+- [ ] [VoiceSauce](https://phonetics.ucla.edu/voicesauce/) feature extraction.  
+- [ ] More feature extraction methods parameters (e.g. formant extraction parameters).
+- [ ] Feature extraction (particularly for acoustic features set) visual inspection and confirmetion from user.
+- [ ] ECAPA-TDNN speaker verification:
+  - pairwise speaker comparisons + distance and similarity scores output
+  - selective speaker comparisons
 
+## Beta v1.0 project:
+- [ ] Moving away from TensorBoard embedding projector to interactive web-app using `plotly-dash` and `bokeh`.
+- [ ] Statistical tools.
+- [ ] Online access to tool.
 
 ## Caveats
 - Data that contains NAs: a Warning will be raised and the rows containing NA values will be removed (otherwise TensorBoard will raise an error where it is unable to transorm str to float64).
 - `Close projector` button does not work currently.
 - Single observations are not visualized in embedding projector.
+
+## Acknowledgements
+This work is supported by the Linguistic Research Infrastracture [LiRI](https://liri.uzh.ch) and is a supporting project to my doctorate at the [Department of Computational Linguistics](https://cl.uzh.ch) of the University of Zurich.
+
+The project is looking for collaborators, so if you would be interested, feel free to drop me a message.
