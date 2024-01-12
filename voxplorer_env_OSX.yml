@@ -8,6 +8,7 @@ dependencies:
   - pandas
   - umap-learn
   - librosa
+  - pytest
   - pip
   - pip:
     - numpy==1.24.3
