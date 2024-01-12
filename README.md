@@ -124,7 +124,14 @@ After clicking on `Continue`, you will be prompted to select an output directory
 ![Filter window 2](<screenshots/filterGUI2.png>)  
 
 ### Use JSON dtypes check-box:
+When loading any table in voxplorer you will see a check-box labelled `Use JSON dtypes`. This check-box tells voxplorer to look in the same directory as the table for a file with the same name + `_dtypes` and with a JSON extension. This file should contain details for the `Pandas datatype` of each column in the table and is used to ensure that categorical variables are treated as such even in the case of numerical characters. When creating tables using voxplorer (both from the feature extraction and filtering modes), voxplorer will automatically also save this JSON dtypes file.
+
+## Future features:
+[ ] Praat TextGrid support for feature extraction in selected parts of audio (e.g. vowels).  
+[ ] [VoiceSauce](https://phonetics.ucla.edu/voicesauce/) feature extraction.  
 
 
 ## Caveats
 - Data that contains NAs: a Warning will be raised and the rows containing NA values will be removed (otherwise TensorBoard will raise an error where it is unable to transorm str to float64).
+- `Close projector` button does not work currently.
+- Single observations are not visualized in embedding projector.

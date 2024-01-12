@@ -55,6 +55,7 @@ def load_data(path_to_data: str, metavars: list = None, use_json_dtypes: bool = 
                 messagebox.showerror(
                     "Error", "Cannot find dtypes file. This should be saved in the same folder as the data file with the extension _dtypes.json.")
                 return
+            # TODO: implement dtypes to metavars if metavars is None
             df = pd.read_csv(path_to_data, sep=sep, dtype=dtypes)
 
         elif metavars is not None:
