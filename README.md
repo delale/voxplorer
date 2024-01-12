@@ -48,15 +48,17 @@ conda activate voxplorer
 SYSTEM_VERSION_COMPAT=0 pip install tensorflow tensorflow-metal
 ```
   
-**Verify installation by running:**
+**Verify installation:**
+From the voxplorer directory.
 ```sh
 conda activate voxplorer
-which python3
+pytest tests/
 ```
-It should return something along the lines of  
-`/Users/your_user/miniconda3/envs/voxplorer/bin/python3`  
-or  
-`/Users/your_user/anaconda3/envs/voxplorer/bin/python3`
+This should return something like:
+```sh
+==================== 13 passed, 6 warnings in 25.71s ====================
+```
+As long as 13 tests are passed, the installation process has been successful.
 
 ## Usage
 To run the program open a terminal emulator in the voxplorer directory and run 
