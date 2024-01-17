@@ -12,6 +12,7 @@ dependencies:
   - pip:
     - numpy==1.23.5
     - typing-extensions==4.5.0
+    - soundfile
     - speechbrain
     - praat-parselmouth
     - tensorflow==2.12.0
