@@ -10,7 +10,7 @@ dependencies:
   - pytest
   - pip
   - pip:
-    - numpy==1.24.3
+    - numpy==1.23.5
     - typing-extensions==4.5.0
     - speechbrain
     - praat-parselmouth
