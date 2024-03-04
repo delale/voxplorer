@@ -45,7 +45,7 @@ ERROR: No matching distribution found for tensorflow-metal
 In this case run the following commands:
 ```sh
 conda activate voxplorer
-SYSTEM_VERSION_COMPAT=0 pip install tensorflow tensorflow-metal
+SYSTEM_VERSION_COMPAT=0 pip install --force-reinstall tensorflow tensorflow-metal numpy==1.23.5 typing-extensions==4.5.0 speechbrain praat-parselmouth
 ```
   
 **Verify installation:**
