@@ -7,6 +7,7 @@ import os
 from typing import Tuple
 import numpy as np
 from speechbrain.pretrained import EncoderClassifier
+# from speechbrain.inference.classifiers import EncoderClassifier
 import torch
 import torch.nn.functional as F
 import torchaudio
