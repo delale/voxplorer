@@ -62,7 +62,7 @@ class SpeakerEmbedder:
         self.metadata_vars: dict = metadata_vars
         if os.path.isdir(self.audio_dir):
             self.audio_files: list = [os.path.join(self.audio_dir, f
-                                                   ) for f in os.listdir(self.audio_dir) if f.endswith('.wav')
+                                                   ) for f in os.listdir(self.audio_dir) if f.endswith('.wav') and not f.startswith('.')
                                       ]
             if len(self.audio_files) == 0:
                 raise FileNotFoundError('No .wav files found in audio_dir')

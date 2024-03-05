@@ -89,7 +89,7 @@ class FeatureExtractor:
         self.metadata_vars: dict = metadata_vars
         if os.path.isdir(audio_dir):
             self.audio_files: list = [os.path.join(
-                self.audio_dir, f) for f in os.listdir(audio_dir) if f.endswith('.wav')
+                self.audio_dir, f) for f in os.listdir(audio_dir) if f.endswith('.wav') and not f.startswith('.')
             ]
             if len(self.audio_files) == 0:
                 raise FileNotFoundError('No .wav files found in audio_dir')
