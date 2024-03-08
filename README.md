@@ -36,7 +36,7 @@ conda env create -f voxplorer_env_WinOS.yml
 conda env create -f voxplorer_env_OSX.yml
 ```
 
-**Intel x86 OSX**
+**Intel x86 OSX**  
 Due to dependency conflicts on Intel Macs, the installation is automated with a shell script.  
 If your shell is not `zsh` swap that part to the correct shell and change `-i` to the equivalent option for interactive mode in your shell.
 ```sh
