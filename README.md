@@ -31,24 +31,18 @@ conda env create -f voxplorer_env_WinOS.yml
 ```
 :exclamation: This installation has not been tested thoroughly yet.
 
-**OSX**
+**ARM64 OSX**
 ```sh
 conda env create -f voxplorer_env_OSX.yml
 ```
-Sometimes an error during the installation of tensorflow and tensorflow-metal may occur in particular with older Intel x86 Macs:
-```sh
-Pip failed
 
-ERROR: Could not find a version that satisfices the requirement tensorflow-metal (from versions: None)
-ERROR: No matching distribution found for tensorflow-metal
-```
-In this case run the following commands:
+**Intel x86 OSX**
+Due to dependency conflicts on Intel Macs, the installation is automated with a shell script.  
+If your shell is not `zsh` swap that part to the correct shell and change `-i` to the equivalent option for interactive mode in your shell.
 ```sh
-conda activate voxplorer
-SYSTEM_VERSION_COMPAT=0 pip install tensorflow tensorflow-metal
-python3 -m pip install numpy==1.23.5 typing-extensions==4.5.0 speechbrain praat-parselmouth --force-reinstall
+zsh -i x86OSX_env_installer.sh
 ```
-  
+
 **Verify installation:**
 From the voxplorer directory.
 ```sh
