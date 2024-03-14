@@ -138,6 +138,7 @@ When loading any table in voxplorer you will see a check-box labelled `Use JSON 
 - [ ] Online access to tool.
 
 ## Caveats
+- Cannot open multiple projector instances; must close the current session and restart voxplorer. This is due to issues with `threading` in WinOS. For other OSs you can comment out line 111 in [embedding_projector.py](lib/embedding_projector.py) to be able to open continuously projector instances without restarting your session.
 - Data that contains NAs: a Warning will be raised and the rows containing NA values will be removed (otherwise TensorBoard will raise an error where it is unable to transorm str to float64).
 - `Close projector` button does not work currently.
 - Single observations are not visualized in embedding projector.

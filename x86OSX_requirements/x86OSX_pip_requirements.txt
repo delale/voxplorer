@@ -3,4 +3,3 @@ typing-extensions==4.5.0
 speechbrain==0.5.16
 praat-parselmouth==0.4.3
 tensorflow==2.15.0
-tensorflow-metal==1.0.0
