@@ -62,7 +62,7 @@ conda activate voxplorer
 ```
 To open the voxplorer GUI run:
 ```sh
-python3 voxplorer.py
+python voxplorer.py
 ```
 A GUI window should open:  
 ![Main GUI window](<screenshots/mainGUI.png>)  
