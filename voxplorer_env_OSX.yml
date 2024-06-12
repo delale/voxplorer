@@ -13,7 +13,7 @@ dependencies:
   - pip:
     - numpy==1.23.5
     - typing-extensions==4.5.0
-    - speechbrain
+    - speechbrain==0.5.10
     - praat-parselmouth
     - tensorflow
     - tensorflow-metal
